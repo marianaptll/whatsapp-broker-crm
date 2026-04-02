@@ -28,7 +28,7 @@ export default function Sidebar() {
         padding: '0 16px',
         flexShrink: 0,
       }}>
-        <img src="/src/imagem/logo_leadhub_dark_mode.png" alt="Logo" style={{ height: 44, objectFit: 'contain' }} />
+        <img src="/logo_leadhub_dark_mode.png" alt="Logo" style={{ height: 44, objectFit: 'contain' }} />
       </div>
 
       {/* Nav items */}
