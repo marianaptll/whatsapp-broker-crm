@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: #f0f2f8;
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #root {
+    height: 100vh;
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(100, 116, 179, 0.3); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 179, 0.55); }
+
+  textarea:focus, input:focus { outline: none; }
+}
+
+@layer components {
+  .msg-in  { border-radius: 4px 16px 16px 16px; }
+  .msg-out { border-radius: 16px 4px 16px 16px; }
+  .msg-note { border-radius: 8px; }
+
+  .conv-item { transition: background 0.13s; }
+  .conv-item:hover { background: rgba(255, 255, 255, 0.06); }
+  .conv-item.active {
+    background: rgba(37, 211, 102, 0.12);
+    border-left: 3px solid #25D366 !important;
+  }
+
+  .tag-badge {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: 99px;
+  }
+
+  .btn-primary {
+    background: #25D366;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 8px;
+    padding: 7px 16px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: 'Sora', sans-serif;
+  }
+  .btn-primary:hover { background: #1da851; }
+
+  .section-toggle { cursor: pointer; user-select: none; }
+
+  .status-open    { background: #dcfce7; color: #15803d; }
+  .status-pending { background: #fef9c3; color: #a16207; }
+  .status-closed  { background: #f1f5f9; color: #64748b; }
+}
+
+@layer utilities {
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fadeUp 0.22s ease both; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+  .pulse-dot { animation: pulse-dot 1.6s ease infinite; }
+}
