@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar'
 import ConversationList from './components/ConversationList'
 import ChatPanel from './components/ChatPanel'
 import ContactPanel from './components/ContactPanel'
+import MobileLayout from './components/mobile/MobileLayout'
+import useIsMobile from './hooks/useIsMobile'
 import { INITIAL_CONVERSATIONS } from './data/mockData'
 
 export default function App() {
@@ -12,6 +14,8 @@ export default function App() {
   const [filter, setFilter] = useState('mine')
   const [search, setSearch] = useState('')
   const [contactPanelOpen, setContactPanelOpen] = useState(true)
+
+  const isMobile = useIsMobile()
 
   const activeConv = conversations.find(c => c.id === activeId)
 
@@ -25,6 +29,21 @@ export default function App() {
   const handleUpdate = (id, patch) => {
     setConversations(prev =>
       prev.map(c => c.id === id ? { ...c, ...patch } : c)
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <MobileLayout
+        conversations={conversations}
+        activeId={activeId}
+        filter={filter}
+        setFilter={setFilter}
+        search={search}
+        setSearch={setSearch}
+        onSelect={handleSelect}
+        onUpdate={handleUpdate}
+      />
     )
   }
 

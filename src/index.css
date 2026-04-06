@@ -11,10 +11,27 @@
     margin: 0;
     height: 100vh;
     overflow: hidden;
+    /* Prevent iOS bounce / text resize */
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
   }
 
   #root {
     height: 100vh;
+    /* iOS safe area support */
+    height: 100dvh;
+  }
+
+  /* Mobile: prevent zoom on input focus */
+  @media (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+    body {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
   }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
