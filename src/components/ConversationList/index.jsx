@@ -80,18 +80,8 @@ export default function ConversationList({ conversations, activeId, onSelect, fi
       <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
 
         {/* Title row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ color: '#0f172a', fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>
-            Conversas{' '}
-            <span style={{ color: '#94a3b8', fontWeight: 500, fontSize: 12 }}>
-              ({activeCount} ativas)
-            </span>
-          </span>
-          {newCount > 0 && (
-            <div style={{ background: '#22c55e', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-              {newCount} novo{newCount !== 1 ? 's' : ''}
-            </div>
-          )}
+        <div style={{ marginBottom: 10 }}>
+          <span style={{ color: '#0f172a', fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>Conversas</span>
         </div>
 
         {/* Dropdown */}

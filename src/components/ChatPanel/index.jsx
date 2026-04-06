@@ -1,8 +1,22 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import Avatar from '../ui/Avatar'
 import StatusBadge from '../ui/StatusBadge'
 import { WaIcon, SendIcon, AttachIcon, EmojiIcon, LockIcon, DoubleCheckIcon } from '../ui/Icons'
 import { AGENTS } from '../../data/mockData'
+
+// ─── Animated input placeholders ─────────────────────────────────────────────
+const REPLY_PLACEHOLDERS = [
+  'Digite sua mensagem...',
+  'Escreva um follow-up para o cliente...',
+  'Envie uma proposta personalizada...',
+  'Responda com agilidade...',
+]
+const NOTE_PLACEHOLDERS = [
+  'Escreva uma nota para o time...',
+  'Registre informações importantes...',
+  'Adicione um contexto interno...',
+]
 
 // ─── Quick replies (mensagens prontas) ───────────────────────────────────────
 const QUICK_REPLIES = [
@@ -185,6 +199,82 @@ function BroadcastModal({ onClose }) {
   )
 }
 
+// ─── Message actions dropdown ─────────────────────────────────────────────────
+function MessageActions({ isMe, onCopy, onDelete }) {
+  const [open, setOpen] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const ref = useRef(null)
+
+  const close = () => {
+    setClosing(true)
+    setTimeout(() => { setOpen(false); setClosing(false) }, 180)
+  }
+
+  useEffect(() => {
+    if (!open || closing) return
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) close()
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open, closing])
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => open ? close() : setOpen(true)}
+        style={{
+          width: 24, height: 24, borderRadius: 6,
+          border: '1px solid #e2e8f0',
+          background: open ? '#f1f5f9' : '#fff',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#64748b', transition: 'all 0.13s', padding: 0,
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+        onMouseLeave={e => { if (!open) e.currentTarget.style.background = '#fff' }}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div className={closing ? 'dropdown-menu-exit' : 'dropdown-menu-enter'} style={{
+          position: 'absolute', bottom: 'calc(100% + 6px)',
+          [isMe ? 'right' : 'left']: 0,
+          background: '#fff', borderRadius: 10,
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          width: 148, zIndex: 999, overflow: 'hidden', padding: 4,
+        }}>
+          {[
+            { label: '↩ Responder',  action: () => { close() } },
+            { label: '📋 Copiar',    action: () => { onCopy(); close() } },
+            ...(isMe ? [{ label: '🗑 Excluir', action: () => { onDelete(); close() }, danger: true }] : []),
+          ].map((item, i) => (
+            <button
+              key={i}
+              onClick={item.action}
+              style={{
+                width: '100%', display: 'block', padding: '7px 10px',
+                border: 'none', borderRadius: 7, background: 'transparent',
+                color: item.danger ? '#ef4444' : '#334155',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                fontFamily: 'Sora, sans-serif', textAlign: 'left',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = item.danger ? '#fff1f2' : '#f8fafc'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Chat components ──────────────────────────────────────────────────────────
 function DateSeparator({ date }) {
   return (
@@ -215,12 +305,23 @@ function NoteMessage({ msg }) {
 }
 
 function ReceivedMessage({ msg, conv }) {
+  const [hov, setHov] = useState(false)
   return (
-    <div className="fade-up" style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 4, alignSelf: 'flex-start', maxWidth: '70%' }}>
+    <div
+      className="fade-up"
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 4, alignSelf: 'flex-start', maxWidth: '70%' }}
+    >
       <Avatar initials={conv.avatar} color={conv.avatarColor} size={28} />
       <div>
-        <div className="msg-in" style={{ background: '#fff', padding: '9px 13px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{msg.text}</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
+          <div className="msg-in" style={{ background: '#fff', padding: '9px 13px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{msg.text}</p>
+          </div>
+          <div style={{ opacity: hov ? 1 : 0, transition: 'opacity 0.15s', marginBottom: 2 }}>
+            <MessageActions isMe={false} onCopy={() => navigator.clipboard?.writeText(msg.text)} onDelete={() => {}} />
+          </div>
         </div>
         <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 3, display: 'block', paddingLeft: 4 }}>{msg.time}</span>
       </div>
@@ -228,18 +329,120 @@ function ReceivedMessage({ msg, conv }) {
   )
 }
 
-function SentMessage({ msg }) {
+function SentMessage({ msg, onDelete }) {
+  const [hov, setHov] = useState(false)
   return (
-    <div className="fade-up" style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 4, alignSelf: 'flex-end', maxWidth: '70%', flexDirection: 'row-reverse' }}>
+    <div
+      className="fade-up"
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 4, alignSelf: 'flex-end', maxWidth: '70%', flexDirection: 'row-reverse' }}
+    >
       <Avatar initials="V" color="#4356a0" size={28} />
       <div>
-        <div className="msg-out" style={{ background: '#dcf8c6', padding: '9px 13px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-          <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{msg.text}</p>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: 'row-reverse' }}>
+          <div className="msg-out" style={{ background: '#dcf8c6', padding: '9px 13px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+            <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{msg.text}</p>
+          </div>
+          <div style={{ opacity: hov ? 1 : 0, transition: 'opacity 0.15s', marginBottom: 2 }}>
+            <MessageActions isMe={true} onCopy={() => navigator.clipboard?.writeText(msg.text)} onDelete={onDelete} />
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 3, paddingRight: 4 }}>
           <span style={{ fontSize: 10, color: '#94a3b8' }}>{msg.time}</span>
           <DoubleCheckIcon color="#3b82f6" />
         </div>
+      </div>
+    </div>
+  )
+}
+
+function AudioMessage({ msg }) {
+  const [playing, setPlaying] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const audioRef = useRef(null)
+  const isMe = msg.type === 'sent-audio'
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    const onEnd = () => { setPlaying(false); setProgress(0); setCurrentTime(0) }
+    const onTime = () => {
+      if (audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100)
+        setCurrentTime(audio.currentTime)
+      }
+    }
+    audio.addEventListener('ended', onEnd)
+    audio.addEventListener('timeupdate', onTime)
+    return () => { audio.removeEventListener('ended', onEnd); audio.removeEventListener('timeupdate', onTime) }
+  }, [])
+
+  const toggle = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    if (playing) { audio.pause(); setPlaying(false) }
+    else { audio.play(); setPlaying(true) }
+  }
+
+  const formatTime = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
+  const displayTime = playing || progress > 0 ? formatTime(currentTime) : formatTime(msg.duration || 0)
+
+  return (
+    <div className="fade-up" style={{
+      display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 4,
+      alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '60%',
+      flexDirection: isMe ? 'row-reverse' : 'row',
+    }}>
+      <audio ref={audioRef} src={msg.audioUrl} preload="metadata" />
+      <Avatar initials={isMe ? 'V' : '?'} color={isMe ? '#4356a0' : '#64748b'} size={28} />
+      <div>
+        <div style={{
+          background: isMe ? '#dcf8c6' : '#fff',
+          borderRadius: isMe ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+          padding: '10px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          display: 'flex', alignItems: 'center', gap: 10, minWidth: 200,
+        }}>
+          {/* Play/pause */}
+          <button
+            onClick={toggle}
+            style={{
+              width: 34, height: 34, borderRadius: '50%', border: 'none', flexShrink: 0,
+              background: isMe ? '#25D366' : '#3b82f6', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}
+          >
+            {playing
+              ? <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><rect x="1" y="1" width="4" height="10" rx="1"/><rect x="7" y="1" width="4" height="10" rx="1"/></svg>
+              : <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M2 1.5l9 4.5-9 4.5z"/></svg>
+            }
+          </button>
+
+          {/* Waveform + progress */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ position: 'relative', height: 28, display: 'flex', alignItems: 'center', gap: 1 }}>
+              {Array.from({ length: 28 }, (_, i) => {
+                const h = [4,6,10,14,10,8,12,16,10,7,14,18,12,8,16,20,14,10,8,12,16,10,6,14,10,8,6,4][i] || 6
+                const filled = (i / 28) * 100 <= progress
+                return (
+                  <div key={i} style={{
+                    width: 2.5, height: h, borderRadius: 2, flexShrink: 0,
+                    background: filled ? (isMe ? '#25D366' : '#3b82f6') : '#cbd5e1',
+                    transition: 'background 0.1s',
+                  }} />
+                )
+              })}
+            </div>
+            <span style={{ fontSize: 10, color: '#94a3b8' }}>{displayTime}</span>
+          </div>
+        </div>
+        {isMe && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginTop: 3, paddingRight: 4 }}>
+            <span style={{ fontSize: 10, color: '#94a3b8' }}>{msg.time}</span>
+            <DoubleCheckIcon color="#3b82f6" />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -333,6 +536,288 @@ function WallpaperModal({ current, onSelect, onClose }) {
   )
 }
 
+// ─── Typing indicator ────────────────────────────────────────────────────────
+function TypingIndicator({ conv }) {
+  return (
+    <div className="fade-up" style={{ display: 'flex', alignItems: 'flex-end', gap: 8, alignSelf: 'flex-start', marginBottom: 4 }}>
+      <Avatar initials={conv.avatar} color={conv.avatarColor} size={28} />
+      <div className="msg-in" style={{ background: '#fff', padding: '8px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: 4 }}>
+        {[0, 0.15, 0.3].map((delay, i) => (
+          <motion.div
+            key={i}
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut', delay }}
+            style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8' }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Audio recorder hook ─────────────────────────────────────────────────────
+function useAudioRecorder(onDone) {
+  const [recording, setRecording] = useState(false)
+  const [seconds, setSeconds] = useState(0)
+  const [denied, setDenied] = useState(false)
+  const mediaRef  = useRef(null)
+  const chunksRef = useRef([])
+  const timerRef  = useRef(null)
+
+  const start = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mr = new MediaRecorder(stream)
+      chunksRef.current = []
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      mr.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        const url  = URL.createObjectURL(blob)
+        onDone(url, seconds)
+        stream.getTracks().forEach(t => t.stop())
+        setSeconds(0)
+      }
+      mr.start()
+      mediaRef.current = mr
+      setRecording(true)
+      setDenied(false)
+      timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000)
+    } catch {
+      setDenied(true)
+    }
+  }, [onDone, seconds])
+
+  const stop = useCallback(() => {
+    mediaRef.current?.stop()
+    clearInterval(timerRef.current)
+    setRecording(false)
+  }, [])
+
+  const cancel = useCallback(() => {
+    mediaRef.current?.stream?.getTracks().forEach(t => t.stop())
+    mediaRef.current?.stop()
+    chunksRef.current = []
+    clearInterval(timerRef.current)
+    setRecording(false)
+    setSeconds(0)
+  }, [])
+
+  return { recording, seconds, denied, start, stop, cancel }
+}
+
+// ─── Mic button ───────────────────────────────────────────────────────────────
+function MicButton({ onDone }) {
+  const { recording, seconds, denied, start, stop, cancel } = useAudioRecorder(onDone)
+  const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+  if (recording) return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Cancel */}
+      <button
+        onClick={cancel}
+        title="Cancelar"
+        style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+      >
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+      </button>
+
+      {/* Timer + pulse */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 10, padding: '6px 12px', flexShrink: 0 }}>
+        <motion.div animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }}
+          style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#ef4444', fontFamily: 'Sora, sans-serif', fontVariantNumeric: 'tabular-nums' }}>
+          {fmt(seconds)}
+        </span>
+      </div>
+
+      {/* Send recording */}
+      <button
+        onClick={stop}
+        title="Enviar áudio"
+        style={{ width: 42, height: 42, borderRadius: 10, border: 'none', background: '#25D366', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, boxShadow: '0 2px 8px rgba(37,211,102,0.35)' }}
+      >
+        <SendIcon />
+      </button>
+    </div>
+  )
+
+  return (
+    <button
+      onClick={start}
+      title={denied ? 'Permissão de microfone negada' : 'Gravar áudio'}
+      style={{
+        width: 42, height: 42, borderRadius: 10, border: 'none', flexShrink: 0,
+        background: denied ? '#fee2e2' : '#f1f5f9',
+        color: denied ? '#ef4444' : '#64748b',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={e => { if (!denied) { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#334155' } }}
+      onMouseLeave={e => { if (!denied) { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b' } }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="2" width="6" height="12" rx="3"/>
+        <path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/>
+      </svg>
+    </button>
+  )
+}
+
+// ─── Animated input ───────────────────────────────────────────────────────────
+function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio, onActiveChange }) {
+  const [isActive, setIsActive] = useState(false)
+  const [placeholderIndex, setPlaceholderIndex] = useState(0)
+  const [showPlaceholder, setShowPlaceholder] = useState(true)
+  const wrapperRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  const expanded = isActive || !!input.trim()
+  const PLACEHOLDERS = isNote ? NOTE_PLACEHOLDERS : REPLY_PLACEHOLDERS
+
+  // Cycle placeholder when collapsed and idle
+  useEffect(() => {
+    setPlaceholderIndex(0)
+    setShowPlaceholder(true)
+    if (expanded) return
+    const iv = setInterval(() => {
+      setShowPlaceholder(false)
+      setTimeout(() => {
+        setPlaceholderIndex(p => (p + 1) % PLACEHOLDERS.length)
+        setShowPlaceholder(true)
+      }, 350)
+    }, 3000)
+    return () => clearInterval(iv)
+  }, [expanded, isNote])
+
+  // Notify parent of active state
+  useEffect(() => { onActiveChange?.(isActive) }, [isActive])
+
+  // Collapse on outside click (only if empty)
+  useEffect(() => {
+    if (!isActive) return
+    function handle(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        if (!input.trim()) setIsActive(false)
+      }
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [isActive, input])
+
+  const borderColor = isNote ? '#fde047' : expanded ? '#3b82f6' : '#e2e8f0'
+  const bg          = isNote ? '#fefce8' : '#fff'
+
+  const letterVariants = {
+    initial: { opacity: 0, filter: 'blur(8px)', y: 5 },
+    animate: { opacity: 1, filter: 'blur(0px)', y: 0,
+      transition: { opacity: { duration: 0.2 }, filter: { duration: 0.3 }, y: { type: 'spring', stiffness: 80, damping: 20 } } },
+    exit:    { opacity: 0, filter: 'blur(8px)', y: -5,
+      transition: { opacity: { duration: 0.15 }, filter: { duration: 0.2 }, y: { type: 'spring', stiffness: 80, damping: 20 } } },
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+      <motion.div
+        ref={wrapperRef}
+        animate={{ height: expanded ? (isNote ? 132 : 116) : 50 }}
+        transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+        onClick={() => { if (!isActive) { setIsActive(true); textareaRef.current?.focus() } }}
+        style={{
+          flex: 1, border: `1.5px solid ${borderColor}`, borderRadius: 12,
+          background: bg, overflow: 'hidden', cursor: 'text',
+          display: 'flex', flexDirection: 'column',
+          transition: 'border-color 0.2s',
+        }}
+      >
+        {/* Note banner */}
+        <motion.div
+          animate={{ height: (isNote && expanded) ? 'auto' : 0, opacity: (isNote && expanded) ? 1 : 0 }}
+          transition={{ duration: 0.2 }}
+          style={{ overflow: 'hidden', flexShrink: 0 }}
+        >
+          <div style={{ padding: '6px 12px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <LockIcon />
+            <span style={{ fontSize: 10.5, fontWeight: 700, color: '#a16207' }}>Nota interna — não visível ao cliente</span>
+          </div>
+        </motion.div>
+
+        {/* Textarea + placeholder */}
+        <div style={{ flex: 1, position: 'relative', padding: '10px 12px', minHeight: 0 }}>
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            onFocus={() => setIsActive(true)}
+            spellCheck
+            lang="pt-BR"
+            style={{
+              width: '100%', height: '100%', border: 'none', padding: 0,
+              fontSize: 13, color: '#1e293b', background: 'transparent',
+              resize: 'none', fontFamily: 'Sora, sans-serif',
+              lineHeight: 1.55, outline: 'none', boxSizing: 'border-box',
+              position: 'relative', zIndex: 1,
+            }}
+          />
+          {/* Animated cycling placeholder */}
+          {!input && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0,
+              padding: '10px 12px', pointerEvents: 'none',
+              display: 'flex', alignItems: 'flex-start',
+            }}>
+              <AnimatePresence mode="wait">
+                {showPlaceholder && !isActive && (
+                  <motion.span
+                    key={`${isNote ? 'n' : 'r'}-${placeholderIndex}`}
+                    style={{ color: '#94a3b8', fontSize: 13, fontFamily: 'Sora, sans-serif', lineHeight: 1.55 }}
+                    variants={{ initial: {}, animate: { transition: { staggerChildren: 0.018 } }, exit: { transition: { staggerChildren: 0.01, staggerDirection: -1 } } }}
+                    initial="initial" animate="animate" exit="exit"
+                  >
+                    {PLACEHOLDERS[placeholderIndex].split('').map((char, i) => (
+                      <motion.span key={i} variants={letterVariants} style={{ display: 'inline-block' }}>
+                        {char === ' ' ? '\u00A0' : char}
+                      </motion.span>
+                    ))}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom toolbar — fades in on expand */}
+        <motion.div
+          animate={{ opacity: expanded ? 1 : 0, y: expanded ? 0 : 6, pointerEvents: expanded ? 'auto' : 'none' }}
+          transition={{ duration: 0.2, delay: expanded ? 0.07 : 0 }}
+          style={{ display: 'flex', gap: 6, padding: '4px 10px 6px', borderTop: `1px solid ${isNote ? 'rgba(253,224,71,0.4)' : '#f1f5f9'}`, flexShrink: 0 }}
+        >
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}><EmojiIcon /></button>
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}><AttachIcon /></button>
+        </motion.div>
+      </motion.div>
+
+      {/* Send or mic */}
+      {input.trim() ? (
+        <button
+          onClick={onSend}
+          style={{
+            width: 42, height: 42, borderRadius: 10, flexShrink: 0,
+            background: isNote ? '#a16207' : '#25D366',
+            border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', transition: 'all 0.15s',
+          }}
+        >
+          <SendIcon />
+        </button>
+      ) : (
+        !isNote && <MicButton onDone={onSendAudio} />
+      )}
+    </div>
+  )
+}
+
 // ─── Quick reply chip ─────────────────────────────────────────────────────────
 function QuickReplyChip({ item, onSelect }) {
   const [hov, setHov] = useState(false)
@@ -376,15 +861,30 @@ function QuickReplyChip({ item, onSelect }) {
 export default function ChatPanel({ conv, onUpdate }) {
   const [mode, setMode] = useState('reply')
   const [input, setInput] = useState('')
+  const [inputActive, setInputActive] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
   const [showBroadcast, setShowBroadcast] = useState(false)
   const [showWallpaper, setShowWallpaper] = useState(false)
   const [chatBg, setChatBg] = useState('#eef2f7')
+  const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [conv?.messages])
+
+  // Simulate typing indicator when switching to a conversation with unread messages
+  useEffect(() => {
+    if (!conv || conv.status === 'closed') return
+    const lastMsg = conv.messages[conv.messages.length - 1]
+    if (lastMsg?.type !== 'received') return
+    const delay = setTimeout(() => {
+      setIsTyping(true)
+      const stop = setTimeout(() => setIsTyping(false), 2800)
+      return () => clearTimeout(stop)
+    }, 600)
+    return () => clearTimeout(delay)
+  }, [conv?.id])
 
   if (!conv) {
     return (
@@ -470,10 +970,24 @@ export default function ChatPanel({ conv, onUpdate }) {
       >
         {grouped.map((item, i) => {
           if (item._sep) return <DateSeparator key={'sep' + i} date={item.date} />
-          if (item.type === 'note')     return <NoteMessage key={item.id} msg={item} />
-          if (item.type === 'received') return <ReceivedMessage key={item.id} msg={item} conv={conv} />
-          return <SentMessage key={item.id} msg={item} />
+          if (item.type === 'note')       return <NoteMessage    key={item.id} msg={item} />
+          if (item.type === 'received')   return <ReceivedMessage key={item.id} msg={item} conv={conv} />
+          if (item.type === 'sent-audio') return <AudioMessage   key={item.id} msg={item} />
+          return <SentMessage key={item.id} msg={item} onDelete={() => onUpdate(conv.id, { messages: conv.messages.filter(m => m.id !== item.id) })} />
         })}
+        <AnimatePresence>
+          {isTyping && (
+            <motion.div
+              key="typing"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.2 }}
+            >
+              <TypingIndicator conv={conv} />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div ref={messagesEndRef} />
       </div>
 
@@ -508,8 +1022,8 @@ export default function ChatPanel({ conv, onUpdate }) {
                 ))}
               </div>
 
-              {/* Quick replies */}
-              {!isNote && (
+              {/* Quick replies — only when input is active */}
+              {!isNote && (inputActive || !!input.trim()) && (
                 <>
                   <div style={{ width: 1, height: 16, background: '#e2e8f0', flexShrink: 0 }} />
                   {QUICK_REPLIES.map((qr, i) => (
@@ -542,44 +1056,31 @@ export default function ChatPanel({ conv, onUpdate }) {
               )}
             </div>
 
-            {/* Textarea + send */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-              <div style={{ flex: 1, border: `1.5px solid ${isNote ? '#fde047' : '#e2e8f0'}`, borderRadius: 10, background: isNote ? '#fefce8' : '#fff', transition: 'all 0.2s', overflow: 'hidden' }}>
-                {isNote && (
-                  <div style={{ padding: '6px 12px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <LockIcon />
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: '#a16207' }}>Nota interna — não visível ao cliente</span>
-                  </div>
-                )}
-                <textarea
-                  placeholder={isNote ? 'Escreva uma nota para o time...' : 'Digite sua mensagem...'}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={2}
-                  spellCheck={true}
-                  lang="pt-BR"
-                  style={{ width: '100%', border: 'none', padding: isNote ? '6px 12px 8px' : '10px 12px', fontSize: 13, color: '#1e293b', background: 'transparent', resize: 'none', fontFamily: 'Sora, sans-serif', lineHeight: 1.55, outline: 'none', boxSizing: 'border-box' }}
-                />
-                <div style={{ display: 'flex', gap: 6, padding: '4px 10px 6px', borderTop: `1px solid ${isNote ? 'rgba(253,224,71,0.4)' : '#f1f5f9'}` }}>
-                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}><EmojiIcon /></button>
-                  <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}><AttachIcon /></button>
-                </div>
-              </div>
-              <button
-                onClick={handleSend}
-                style={{
-                  width: 42, height: 42, borderRadius: 10,
-                  background: input.trim() ? (isNote ? '#a16207' : '#25D366') : '#e2e8f0',
-                  border: 'none', cursor: input.trim() ? 'pointer' : 'default',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: input.trim() ? '#fff' : '#94a3b8',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <SendIcon />
-              </button>
-            </div>
+            {/* Animated textarea + send */}
+            <AnimatedInput
+              input={input}
+              setInput={setInput}
+              isNote={isNote}
+              onKeyDown={handleKeyDown}
+              onSend={handleSend}
+              onActiveChange={setInputActive}
+              onSendAudio={(url, duration) => {
+                const newMsg = {
+                  id: 'm' + Date.now(),
+                  type: 'sent-audio',
+                  audioUrl: url,
+                  duration,
+                  time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+                  date: 'Hoje',
+                }
+                onUpdate(conv.id, {
+                  messages: [...conv.messages, newMsg],
+                  lastMessage: '🎤 Áudio',
+                  lastTime: newMsg.time,
+                  unread: 0,
+                })
+              }}
+            />
             <p style={{ margin: '5px 0 0', fontSize: 10, color: '#94a3b8' }}>Enter para enviar · Shift+Enter para nova linha</p>
           </div>
         </div>
