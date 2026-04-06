@@ -818,6 +818,83 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
   )
 }
 
+// ─── Quick replies dropdown ───────────────────────────────────────────────────
+function QuickRepliesDropdown({ onSelect }) {
+  const [open, setOpen] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const ref = useRef(null)
+
+  const close = () => {
+    setClosing(true)
+    setTimeout(() => { setOpen(false); setClosing(false) }, 180)
+  }
+
+  useEffect(() => {
+    if (!open || closing) return
+    function handle(e) {
+      if (ref.current && !ref.current.contains(e.target)) close()
+    }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [open, closing])
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => open ? close() : setOpen(true)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '4px 10px', borderRadius: 99,
+          border: `1px solid ${open ? '#3b82f6' : '#e2e8f0'}`,
+          background: open ? '#eff6ff' : '#f8fafc',
+          color: open ? '#1d4ed8' : '#64748b',
+          fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          fontFamily: 'Sora, sans-serif', transition: 'all 0.13s',
+        }}
+      >
+        ⚡ Respostas rápidas
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', opacity: 0.5 }}>
+          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className={closing ? 'dropdown-menu-exit' : 'dropdown-menu-enter'}
+          style={{
+            position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
+            background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            width: 240, zIndex: 999, overflow: 'hidden', padding: 6,
+            display: 'flex', flexDirection: 'column', gap: 2,
+          }}
+        >
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '4px 8px 6px' }}>
+            Mensagens prontas
+          </div>
+          {QUICK_REPLIES.map((qr, i) => (
+            <button
+              key={i}
+              onClick={() => { onSelect(qr.text); close() }}
+              style={{
+                width: '100%', textAlign: 'left', padding: '8px 10px',
+                border: 'none', borderRadius: 8, background: 'transparent',
+                cursor: 'pointer', fontFamily: 'Sora, sans-serif', transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <div style={{ fontSize: 11.5, fontWeight: 600, color: '#334155', marginBottom: 2 }}>{qr.label}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{qr.text}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Quick reply chip ─────────────────────────────────────────────────────────
 function QuickReplyChip({ item, onSelect }) {
   const [hov, setHov] = useState(false)
@@ -865,8 +942,9 @@ export default function ChatPanel({ conv, onUpdate }) {
   const [showTransfer, setShowTransfer] = useState(false)
   const [showBroadcast, setShowBroadcast] = useState(false)
   const [showWallpaper, setShowWallpaper] = useState(false)
-  const [chatBg, setChatBg] = useState('#eef2f7')
+  const [chatBg, setChatBg] = useState('#afc3e4')
   const [isTyping, setIsTyping] = useState(false)
+  const typingTimerRef = useRef(null)
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
@@ -914,6 +992,16 @@ export default function ChatPanel({ conv, onUpdate }) {
       unread: 0,
     })
     setInput('')
+    clearTimeout(typingTimerRef.current)
+    setIsTyping(false)
+  }
+
+  const handleInputChange = (val) => {
+    setInput(val)
+    if (mode === 'note' || !val.trim()) return
+    setIsTyping(true)
+    clearTimeout(typingTimerRef.current)
+    typingTimerRef.current = setTimeout(() => setIsTyping(false), 1800)
   }
 
   const handleKeyDown = (e) => {
@@ -1022,14 +1110,9 @@ export default function ChatPanel({ conv, onUpdate }) {
                 ))}
               </div>
 
-              {/* Quick replies — only when input is active */}
-              {!isNote && (inputActive || !!input.trim()) && (
-                <>
-                  <div style={{ width: 1, height: 16, background: '#e2e8f0', flexShrink: 0 }} />
-                  {QUICK_REPLIES.map((qr, i) => (
-                    <QuickReplyChip key={i} item={qr} onSelect={t => setInput(t)} />
-                  ))}
-                </>
+              {/* Quick replies dropdown button */}
+              {!isNote && (
+                <QuickRepliesDropdown onSelect={t => setInput(t)} />
               )}
 
               {/* Templates button */}
@@ -1059,7 +1142,7 @@ export default function ChatPanel({ conv, onUpdate }) {
             {/* Animated textarea + send */}
             <AnimatedInput
               input={input}
-              setInput={setInput}
+              setInput={handleInputChange}
               isNote={isNote}
               onKeyDown={handleKeyDown}
               onSend={handleSend}
