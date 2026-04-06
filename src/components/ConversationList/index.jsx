@@ -1,6 +1,11 @@
+import { useState, useRef, useEffect } from 'react'
 import { SearchIcon } from '../ui/Icons'
 import ConvItem from './ConvItem'
 import { AGENTS } from '../../data/mockData'
+
+function isWithin24h(lastTime) {
+  return /^\d{1,2}:\d{2}$/.test(lastTime)
+}
 
 function filterConversations(conversations, filter, search) {
   return conversations.filter(c => {
@@ -11,116 +16,168 @@ function filterConversations(conversations, filter, search) {
 
     if (!matchSearch) return false
 
-    if (filter === 'mine')       return c.assignedTo === 'a1' && c.status !== 'closed'
-    if (filter === 'unassigned') return !c.assignedTo && c.status !== 'closed'
-    if (filter === 'closed')     return c.status === 'closed'
-    // agent view (a2, a3, a4…)
+    if (filter === 'mine')   return c.assignedTo === 'a1' && c.status !== 'closed'
+    if (filter === 'closed') return c.status === 'closed'
     const isAgent = AGENTS.some(a => a.id === filter)
-    if (isAgent)                 return c.assignedTo === filter && c.status !== 'closed'
+    if (isAgent)             return c.assignedTo === filter && c.status !== 'closed'
     return c.status !== 'closed'
   })
 }
 
-const STATUS_GROUPS = [
-  { key: 'open',    label: 'Abertas',   color: '#25D366' },
-  { key: 'pending', label: 'Pendentes', color: '#fbbf24' },
+const DROPDOWN_EXTRAS = [
+  { key: 'closed', label: 'Arquivadas', dot: '#94a3b8' },
 ]
 
-const BASE_FILTERS = [
-  { key: 'mine',       label: 'Minhas conversas', dot: '#4356a0' },
-  { key: 'unassigned', label: 'Sem atribuição',   dot: '#fb7185' },
-  { key: 'closed',     label: 'Arquivadas',        dot: 'rgba(255,255,255,0.25)' },
-]
+function ChevronIcon({ open }) {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+      style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', opacity: 0.4, flexShrink: 0 }}>
+      <path d="M2 3.5L5 6.5L8 3.5" stroke="#334155" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
 
 export default function ConversationList({ conversations, activeId, onSelect, filter, setFilter, search, setSearch, onUpdate }) {
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    if (!dropdownOpen) return
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [dropdownOpen])
+
   const liderados = AGENTS.filter(a => a.id !== 'a1')
-  const FILTERS = [
-    ...BASE_FILTERS.slice(0, 1),
+  const dropdownPrimary = [
+    { key: 'mine', label: 'Minhas conversas', dot: '#4356a0' },
     ...liderados.map(a => ({ key: a.id, label: a.name, dot: a.color })),
-    ...BASE_FILTERS.slice(1),
   ]
+  const allDropdownOptions = [...dropdownPrimary, ...DROPDOWN_EXTRAS]
+
+  const currentOption = allDropdownOptions.find(o => o.key === filter) || dropdownPrimary[0]
 
   const filtered = filterConversations(conversations, filter, search)
   const newCount = conversations.filter(c => c.unread > 0).length
+  const activeCount = conversations.filter(c => c.status !== 'closed').length
 
-  // Group by status when not in 'closed' filter
   const showGroups = filter !== 'closed'
   const groups = showGroups
-    ? STATUS_GROUPS.map(g => ({ ...g, items: filtered.filter(c => c.status === g.key) })).filter(g => g.items.length > 0)
-    : [{ key: 'closed', label: 'Arquivadas', color: 'rgba(255,255,255,0.3)', items: filtered }]
+    ? [
+        { key: 'abertas',  label: 'Abertas',  color: '#22c55e', items: filtered.filter(c => isWithin24h(c.lastTime)) },
+        { key: 'fechadas', label: 'Fechadas', color: '#ef4444', items: filtered.filter(c => !isWithin24h(c.lastTime)) },
+      ].filter(g => g.items.length > 0)
+    : [{ key: 'closed', label: 'Arquivadas', color: '#94a3b8', items: filtered }]
 
   return (
-    <div style={{ width: 300, minWidth: 300, background: '#141a3d', display: 'flex', flexDirection: 'column', height: '100%', borderRight: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+    <div style={{ width: 300, minWidth: 300, background: '#f8fafc', display: 'flex', flexDirection: 'column', height: '100%', borderRight: '1px solid #e2e8f0', flexShrink: 0 }}>
+
       {/* Header */}
-      <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+      <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
+
+        {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ color: '#fff', fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>Conversas</span>
+          <span style={{ color: '#0f172a', fontWeight: 700, fontSize: 14, letterSpacing: '-0.02em' }}>
+            Conversas{' '}
+            <span style={{ color: '#94a3b8', fontWeight: 500, fontSize: 12 }}>
+              ({activeCount} ativas)
+            </span>
+          </span>
           {newCount > 0 && (
-            <div style={{ background: '#25D366', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#fff' }}>
+            <div style={{ background: '#22c55e', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
               {newCount} novo{newCount !== 1 ? 's' : ''}
             </div>
           )}
         </div>
 
+        {/* Dropdown */}
+        <div ref={dropdownRef} style={{ position: 'relative', marginBottom: 8 }}>
+          <button
+            onClick={() => setDropdownOpen(v => !v)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: dropdownOpen ? '#f1f5f9' : '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: dropdownOpen ? '8px 8px 0 0' : 8,
+              padding: '7px 10px', color: '#334155',
+              fontSize: 12.5, fontWeight: 600, fontFamily: 'Sora, sans-serif', cursor: 'pointer',
+              transition: 'background 0.13s',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: currentOption.dot, flexShrink: 0 }} />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentOption.label}</span>
+            </div>
+            <ChevronIcon open={dropdownOpen} />
+          </button>
+
+          {dropdownOpen && (
+            <div style={{
+              position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              borderTop: 'none',
+              borderRadius: '0 0 9px 9px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
+              overflow: 'hidden',
+            }}>
+              {dropdownPrimary.slice(0, 1).map(opt => (
+                <DropItem key={opt.key} opt={opt} active={filter === opt.key} onClick={() => { setFilter(opt.key); setDropdownOpen(false) }} />
+              ))}
+              <div style={{ borderTop: '1px solid #f1f5f9', margin: '2px 0' }} />
+              {dropdownPrimary.slice(1).map(opt => (
+                <DropItem key={opt.key} opt={opt} active={filter === opt.key} onClick={() => { setFilter(opt.key); setDropdownOpen(false) }} />
+              ))}
+              <div style={{ borderTop: '1px solid #f1f5f9', margin: '2px 0' }} />
+              {DROPDOWN_EXTRAS.map(opt => (
+                <DropItem key={opt.key} opt={opt} active={filter === opt.key} onClick={() => { setFilter(opt.key); setDropdownOpen(false) }} dim />
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Search */}
-        <div style={{ position: 'relative', marginBottom: 10 }}>
-          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}>
-            <SearchIcon />
+        <div style={{ position: 'relative' }}>
+          <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+            <SearchIcon color="#94a3b8" />
           </div>
           <input
             type="text"
             placeholder="Buscar conversa..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '7px 10px 7px 34px', color: 'rgba(255,255,255,0.85)', fontSize: 12, fontFamily: 'Sora, sans-serif' }}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: '#f8fafc', border: '1px solid #e2e8f0',
+              borderRadius: 8, padding: '7px 10px 7px 34px',
+              color: '#334155', fontSize: 12, fontFamily: 'Sora, sans-serif',
+              outline: 'none',
+            }}
           />
         </div>
-
       </div>
 
-      {/* Inbox filters */}
-      <div style={{ padding: '6px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)', padding: '6px 6px 4px' }}>
-          Caixa de entrada
-        </div>
-        {FILTERS.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              width: '100%', padding: '6px 8px', borderRadius: 7, border: 'none',
-              background: filter === f.key ? 'rgba(255,255,255,0.09)' : 'transparent',
-              color: filter === f.key ? '#fff' : 'rgba(255,255,255,0.4)',
-              fontSize: 12.5, fontWeight: filter === f.key ? 600 : 400,
-              fontFamily: 'Sora, sans-serif', cursor: 'pointer',
-              transition: 'all 0.13s', textAlign: 'left',
-            }}
-            onMouseEnter={e => { if (filter !== f.key) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
-            onMouseLeave={e => { if (filter !== f.key) e.currentTarget.style.background = 'transparent' }}
-          >
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: f.dot ?? 'rgba(255,255,255,0.2)', flexShrink: 0, display: 'inline-block' }} />
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* List — grouped by status */}
+      {/* Conversation list */}
       <div style={{ flex: 1, overflowY: 'auto', paddingTop: 4 }}>
         {filtered.length === 0 ? (
-          <div style={{ padding: 32, textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+          <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
             Nenhuma conversa
           </div>
         ) : groups.map(group => (
           <div key={group.key}>
-            {/* Group header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px 4px' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: group.color, flexShrink: 0, display: 'inline-block' }} />
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)' }}>
-                {group.label}
-              </span>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>
-                {group.items.length}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px 6px', marginTop: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: group.color, flexShrink: 0, boxShadow: `0 0 0 3px ${group.color}22` }} />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: '#334155', letterSpacing: '-0.01em' }}>
+                  {group.label}
+                </span>
+              </div>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: group.color, background: `${group.color}18`, border: `1.5px solid ${group.color}55`, borderRadius: 6, padding: '1px 7px' }}>
+                {group.items.length} conversas
               </span>
             </div>
             {group.items.map(conv => (
@@ -136,5 +193,29 @@ export default function ConversationList({ conversations, activeId, onSelect, fi
         ))}
       </div>
     </div>
+  )
+}
+
+function DropItem({ opt, active, onClick, dim }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+        padding: '7px 12px', border: 'none',
+        background: active ? '#d3ebff' : hov ? '#f8fafc' : 'transparent',
+        color: active ? '#1d4ed8' : dim ? '#94a3b8' : '#475569',
+        fontSize: 12.5, fontWeight: active ? 600 : 400,
+        fontFamily: 'Sora, sans-serif', cursor: 'pointer', textAlign: 'left',
+        transition: 'background 0.1s',
+      }}
+    >
+      <span style={{ width: 7, height: 7, borderRadius: '50%', background: opt.dot, flexShrink: 0 }} />
+      {opt.label}
+      {active && <span style={{ marginLeft: 'auto', color: '#25D366', fontSize: 11 }}>✓</span>}
+    </button>
   )
 }

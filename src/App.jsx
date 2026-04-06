@@ -11,6 +11,7 @@ export default function App() {
   const [activeId, setActiveId] = useState('c1')
   const [filter, setFilter] = useState('mine')
   const [search, setSearch] = useState('')
+  const [contactPanelOpen, setContactPanelOpen] = useState(true)
 
   const activeConv = conversations.find(c => c.id === activeId)
 
@@ -44,7 +45,7 @@ export default function App() {
             onUpdate={handleUpdate}
           />
           <ChatPanel conv={activeConv} onUpdate={handleUpdate} />
-          <ContactPanel conv={activeConv} onUpdate={handleUpdate} />
+          <ContactPanel conv={activeConv} onUpdate={handleUpdate} open={contactPanelOpen} onToggle={() => setContactPanelOpen(v => !v)} />
         </div>
       </div>
     </div>

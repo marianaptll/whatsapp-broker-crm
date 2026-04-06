@@ -31,10 +31,10 @@
   .msg-note { border-radius: 8px; }
 
   .conv-item { transition: background 0.13s; }
-  .conv-item:hover { background: rgba(255, 255, 255, 0.06); }
+  .conv-item:hover { background: #f1f5f9; }
   .conv-item.active {
-    background: rgba(37, 211, 102, 0.12);
-    border-left: 3px solid #25D366 !important;
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6 !important;
   }
 
   .tag-badge {
@@ -61,9 +61,9 @@
 
   .section-toggle { cursor: pointer; user-select: none; }
 
-  .status-open    { background: #dcfce7; color: #15803d; }
-  .status-pending { background: #fef9c3; color: #a16207; }
-  .status-closed  { background: #f1f5f9; color: #64748b; }
+  .status-open    { background: #cefbe5; color: #0f766e; }
+  .status-pending { background: #fbebbb; color: #92400e; }
+  .status-closed  { background: #cecfd0; color: #6b7280; }
 }
 
 @layer utilities {

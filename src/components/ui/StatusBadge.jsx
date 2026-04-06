@@ -1,10 +1,15 @@
-const STATUS_MAP = {
-  open:    ['Aberta',    'status-open'],
-  pending: ['Pendente',  'status-pending'],
-  closed:  ['Encerrada', 'status-closed'],
+function isWithin24h(lastTime) {
+  return /^\d{1,2}:\d{2}$/.test(lastTime)
 }
 
-export default function StatusBadge({ status }) {
-  const [label, cls] = STATUS_MAP[status] ?? ['—', 'status-closed']
-  return <span className={`tag-badge ${cls}`}>{label}</span>
+export default function StatusBadge({ status, lastTime }) {
+  if (status === 'closed') {
+    return <span className="tag-badge status-closed">Encerrada</span>
+  }
+
+  if (isWithin24h(lastTime)) {
+    return <span className="tag-badge status-open">Aberta</span>
+  }
+
+  return <span className="tag-badge status-closed">Fechada</span>
 }
