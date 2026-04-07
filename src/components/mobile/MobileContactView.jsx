@@ -82,7 +82,7 @@ export default function MobileContactView({ conv, onBack, onBackToChat }) {
   const total = THERMO_LEVELS.length - 1
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f0f2f5' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#f0f2f5', overflow: 'hidden' }}>
 
       {/* Status bar spacer */}
       <div style={{ height: 'env(safe-area-inset-top)', background: '#4356a0', flexShrink: 0 }} />

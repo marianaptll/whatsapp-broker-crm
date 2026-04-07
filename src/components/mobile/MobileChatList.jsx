@@ -124,7 +124,7 @@ export default function MobileChatList({
   const totalUnread = conversations.filter(c => c.unread > 0).length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff', overflow: 'hidden' }}>
 
       {/* Status bar spacer */}
       <div style={{ height: 'env(safe-area-inset-top)', background: '#fff', flexShrink: 0 }} />
