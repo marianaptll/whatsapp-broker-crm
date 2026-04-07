@@ -217,11 +217,192 @@ function useAudioRecorder(onDone) {
   return { recording, seconds, denied, start, stop, cancel }
 }
 
+// ─── Wallpaper options ────────────────────────────────────────────────────────
+const WALLPAPERS = [
+  { label: 'Padrão',  value: '#ECE5DD' },
+  { label: 'Azul',    value: '#d3ebff' },
+  { label: 'Navy',    value: '#afc3e4' },
+  { label: 'Roxo',    value: '#e8d1ff' },
+  { label: 'Amarelo', value: '#fbebbb' },
+  { label: 'Rosa',    value: '#fad7d8' },
+  { label: 'Cinza',   value: '#e2e8f0' },
+  { label: 'Branco',  value: '#ffffff' },
+]
+
+// ─── Three-dots menu ──────────────────────────────────────────────────────────
+function ChatMoreMenu({ conv, onUpdate, onViewContact, chatBg, setChatBg }) {
+  const [open, setOpen] = useState(false)
+  const [showWallpaper, setShowWallpaper] = useState(false)
+  const [showTransfer, setShowTransfer] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handle = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handle)
+    document.addEventListener('touchstart', handle)
+    return () => { document.removeEventListener('mousedown', handle); document.removeEventListener('touchstart', handle) }
+  }, [open])
+
+  const actions = [
+    {
+      label: 'Info do contato',
+      icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+      action: () => { setOpen(false); onViewContact() },
+    },
+    {
+      label: 'Transferir conversa',
+      icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>,
+      action: () => { setOpen(false); setShowTransfer(true) },
+    },
+    {
+      label: 'Papel de parede',
+      icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>,
+      action: () => { setOpen(false); setShowWallpaper(true) },
+    },
+    {
+      label: conv?.status === 'closed' ? 'Reabrir conversa' : 'Encerrar conversa',
+      icon: conv?.status === 'closed'
+        ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+      danger: conv?.status !== 'closed',
+      action: () => {
+        setOpen(false)
+        onUpdate(conv.id, { status: conv.status === 'closed' ? 'open' : 'closed' })
+      },
+    },
+  ]
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      {/* Three dots button */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8, display: 'flex' }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+        </svg>
+      </button>
+
+      {/* Dropdown menu */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 200,
+          background: '#fff', borderRadius: 14, overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          border: '1px solid #e2e8f0', minWidth: 210,
+        }}>
+          {actions.map((action, i) => (
+            <button
+              key={i}
+              onClick={action.action}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                width: '100%', padding: '13px 16px',
+                border: 'none', borderBottom: i < actions.length - 1 ? '1px solid #f8fafc' : 'none',
+                background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                color: action.danger ? '#ef4444' : '#0f172a',
+                fontSize: 14, fontWeight: 500, fontFamily: 'Sora, sans-serif',
+                transition: 'background 0.1s',
+              }}
+              onTouchStart={e => e.currentTarget.style.background = '#f8fafc'}
+              onTouchEnd={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <span style={{ color: action.danger ? '#ef4444' : '#4356a0', flexShrink: 0 }}>{action.icon}</span>
+              {action.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Wallpaper bottom sheet */}
+      {showWallpaper && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowWallpaper(false)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '20px 20px 32px', width: '100%' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 99, background: '#e2e8f0', margin: '0 auto 18px' }} />
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginBottom: 16 }}>🎨 Papel de parede</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              {WALLPAPERS.map(w => (
+                <button
+                  key={w.value}
+                  onClick={() => { setChatBg(w.value); setShowWallpaper(false) }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  <div style={{
+                    width: 52, height: 52, borderRadius: 12, background: w.value,
+                    border: chatBg === w.value ? '2.5px solid #4356a0' : '2px solid #e2e8f0',
+                    boxShadow: chatBg === w.value ? '0 0 0 3px #d3ebff' : 'none',
+                  }} />
+                  <span style={{ fontSize: 10.5, color: '#64748b', fontWeight: chatBg === w.value ? 700 : 400 }}>{w.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer bottom sheet */}
+      {showTransfer && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}
+          onClick={() => setShowTransfer(false)}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '20px 0 32px', width: '100%' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 99, background: '#e2e8f0', margin: '0 auto 18px' }} />
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', padding: '0 20px', marginBottom: 8 }}>Transferir conversa</div>
+            <div style={{ fontSize: 12.5, color: '#94a3b8', padding: '0 20px', marginBottom: 16 }}>Selecione o agente de destino</div>
+            {AGENTS.filter(a => a.id !== conv?.assignedTo).map(agent => (
+              <button
+                key={agent.id}
+                onClick={() => { onUpdate(conv.id, { assignedTo: agent.id }); setShowTransfer(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  width: '100%', padding: '12px 20px',
+                  border: 'none', borderBottom: '1px solid #f8fafc',
+                  background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                }}
+                onTouchStart={e => e.currentTarget.style.background = '#f8fafc'}
+                onTouchEnd={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <Avatar initials={agent.avatar} color={agent.color} size={40} />
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: '#0f172a' }}>{agent.name}</div>
+                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Transferir agora</div>
+                </div>
+                <span style={{ marginLeft: 'auto', fontSize: 18, color: '#cbd5e1' }}>→</span>
+              </button>
+            ))}
+            <div style={{ padding: '12px 20px 0' }}>
+              <button
+                onClick={() => setShowTransfer(false)}
+                style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }) {
   const [mode, setMode] = useState('reply')
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [chatBg, setChatBg] = useState('#ECE5DD')
   const typingTimerRef = useRef(null)
   const messagesEndRef = useRef(null)
 
@@ -340,7 +521,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
         </button>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: 0, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 0, flexShrink: 0, position: 'relative' }}>
           <button style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8, display: 'flex' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
@@ -351,11 +532,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
               <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.5 19.79 19.79 0 01.22 2.18 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.91-.91a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
             </svg>
           </button>
-          <button style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8, display: 'flex' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
+          <ChatMoreMenu conv={conv} onUpdate={onUpdate} onViewContact={onViewContact} setChatBg={setChatBg} chatBg={chatBg} />
         </div>
       </div>
 
@@ -363,7 +540,8 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
       <div style={{
         flex: 1, overflowY: 'auto', padding: '14px 10px 8px',
         display: 'flex', flexDirection: 'column',
-        background: '#ECE5DD', WebkitOverflowScrolling: 'touch',
+        background: chatBg, WebkitOverflowScrolling: 'touch',
+        transition: 'background 0.3s ease',
       }}>
         {grouped.map((item, i) => {
           if (item._sep) return <DateSeparator key={'sep' + i} date={item.date} />
