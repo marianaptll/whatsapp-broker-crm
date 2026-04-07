@@ -15,7 +15,7 @@ const QUICK_REPLIES = [
 // ─── Message components ───────────────────────────────────────────────────────
 function DateSeparator({ date }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '12px 0 6px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 12px' }}>
       <div style={{ flex: 1, height: 1, background: 'rgba(0,0,0,0.1)' }} />
       <span style={{
         fontSize: 12, color: '#667781', fontWeight: 600,
@@ -29,7 +29,7 @@ function DateSeparator({ date }) {
 
 function NoteMessage({ msg }) {
   return (
-    <div className="fade-up" style={{ alignSelf: 'center', maxWidth: '82%', marginBottom: 6, marginTop: 2 }}>
+    <div className="fade-up" style={{ alignSelf: 'center', maxWidth: '82%', marginBottom: 10, marginTop: 4 }}>
       <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 10, padding: '9px 13px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
           <LockIcon />
@@ -45,17 +45,17 @@ function NoteMessage({ msg }) {
   )
 }
 
-function ReceivedMessage({ msg, conv }) {
+function ReceivedMessage({ msg, conv, spacingBottom }) {
   return (
     <div className="fade-up" style={{
       display: 'flex', alignItems: 'flex-end', gap: 6,
-      marginBottom: 2, alignSelf: 'flex-start', maxWidth: '80%',
+      marginBottom: spacingBottom, alignSelf: 'flex-start', maxWidth: '80%',
     }}>
       <Avatar initials={conv.avatar} color={conv.avatarColor} size={26} />
       <div>
-        <div className="msg-in" style={{ background: '#fff', padding: '8px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-          <p style={{ margin: 0, fontSize: 15, color: '#111B21', lineHeight: 1.5 }}>{msg.text}</p>
-          <div style={{ textAlign: 'right', marginTop: 2 }}>
+        <div className="msg-in" style={{ background: '#fff', padding: '9px 13px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+          <p style={{ margin: 0, fontSize: 15, color: '#111B21', lineHeight: 1.55 }}>{msg.text}</p>
+          <div style={{ textAlign: 'right', marginTop: 3 }}>
             <span style={{ fontSize: 11, color: '#667781' }}>{msg.time}</span>
           </div>
         </div>
@@ -64,17 +64,17 @@ function ReceivedMessage({ msg, conv }) {
   )
 }
 
-function SentMessage({ msg, onDelete }) {
+function SentMessage({ msg, onDelete, spacingBottom }) {
   const [showActions, setShowActions] = useState(false)
   return (
     <div className="fade-up" style={{
       display: 'flex', alignItems: 'flex-end', gap: 6,
-      marginBottom: 2, alignSelf: 'flex-end', maxWidth: '80%', flexDirection: 'row-reverse',
+      marginBottom: spacingBottom, alignSelf: 'flex-end', maxWidth: '80%', flexDirection: 'row-reverse',
     }}>
       <div>
         <div
           className="msg-out"
-          style={{ background: '#DCF8C6', padding: '8px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', cursor: 'pointer' }}
+          style={{ background: '#DCF8C6', padding: '9px 13px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', cursor: 'pointer' }}
           onContextMenu={e => { e.preventDefault(); setShowActions(v => !v) }}
           onTouchStart={() => {}}
         >
@@ -361,16 +361,24 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
 
       {/* Messages */}
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '10px 12px',
-        display: 'flex', flexDirection: 'column', gap: 0,
+        flex: 1, overflowY: 'auto', padding: '14px 10px 8px',
+        display: 'flex', flexDirection: 'column',
         background: '#ECE5DD', WebkitOverflowScrolling: 'touch',
       }}>
         {grouped.map((item, i) => {
           if (item._sep) return <DateSeparator key={'sep' + i} date={item.date} />
+
+          // Determine spacing: if next item switches sender → bigger gap
+          const next = grouped[i + 1]
+          const senderOf = m => m._sep ? 'sep' : (m.type === 'note' ? 'note' : m.type === 'received' ? 'received' : 'sent')
+          const thisSender = senderOf(item)
+          const nextSender = next ? senderOf(next) : null
+          const spacingBottom = !next || next._sep || nextSender !== thisSender ? 10 : 3
+
           if (item.type === 'note')       return <NoteMessage     key={item.id} msg={item} />
-          if (item.type === 'received')   return <ReceivedMessage  key={item.id} msg={item} conv={conv} />
+          if (item.type === 'received')   return <ReceivedMessage  key={item.id} msg={item} conv={conv} spacingBottom={spacingBottom} />
           if (item.type === 'sent-audio') return <AudioMessage     key={item.id} msg={item} />
-          return <SentMessage key={item.id} msg={item}
+          return <SentMessage key={item.id} msg={item} spacingBottom={spacingBottom}
             onDelete={() => onUpdate(conv.id, { messages: conv.messages.filter(m => m.id !== item.id) })} />
         })}
         <AnimatePresence>
