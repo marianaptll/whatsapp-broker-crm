@@ -165,13 +165,13 @@ function AgentDropdown({ agentFilter, setAgentFilter }) {
       <button
         onClick={() => setOpen(v => !v)}
         style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 12px 6px 10px', borderRadius: 99, border: 'none',
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: '5px 10px 5px 8px', borderRadius: 99, border: 'none',
           background: open ? '#4356a0' : '#e8eaf6',
           color: open ? '#fff' : '#4356a0',
-          fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          fontSize: 12, fontWeight: 700, cursor: 'pointer',
           fontFamily: 'Sora, sans-serif', transition: 'all 0.15s',
-          whiteSpace: 'nowrap',
+          whiteSpace: 'nowrap', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis',
         }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -293,7 +293,7 @@ export default function MobileChatList({
       <div style={{ height: 'env(safe-area-inset-top)', background: '#fff', flexShrink: 0 }} />
 
       {/* Header */}
-      <div style={{ padding: '8px 16px 0', background: '#fff', flexShrink: 0 }}>
+      <div style={{ padding: '10px 16px 0', background: '#fff', flexShrink: 0 }}>
         {showSearch ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10 }}>
             <button
@@ -325,33 +325,33 @@ export default function MobileChatList({
           </div>
         ) : (
           <>
-            {/* Top row: logo + icons */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 6 }}>
-              <img src={logoClaro} alt="LeadHub" style={{ height: 26, objectFit: 'contain', filter: 'brightness(0) saturate(100%) invert(24%) sepia(72%) saturate(511%) hue-rotate(199deg) brightness(89%) contrast(95%)' }} />
-              <div style={{ display: 'flex', gap: 2 }}>
-                <button onClick={() => setShowSearch(true)} style={{ background: 'none', border: 'none', color: '#4356a0', cursor: 'pointer', padding: 8, display: 'flex', borderRadius: '50%' }}>
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Row 1: logo + search + more */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10 }}>
+              <img src={logoClaro} alt="LeadHub" style={{ height: 24, objectFit: 'contain', filter: 'brightness(0) saturate(100%) invert(24%) sepia(72%) saturate(511%) hue-rotate(199deg) brightness(89%) contrast(95%)' }} />
+              <div style={{ display: 'flex', gap: 0 }}>
+                <button onClick={() => setShowSearch(true)} style={{ background: 'none', border: 'none', color: '#4356a0', cursor: 'pointer', padding: 8, display: 'flex' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                   </svg>
                 </button>
-                <button style={{ background: 'none', border: 'none', color: '#4356a0', cursor: 'pointer', padding: 8, display: 'flex', borderRadius: '50%' }}>
-                  <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+                <button style={{ background: 'none', border: 'none', color: '#4356a0', cursor: 'pointer', padding: 8, display: 'flex' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
                   </svg>
                 </button>
               </div>
             </div>
 
-            {/* Title + agent dropdown */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 12, flexWrap: 'wrap' }}>
-              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#111B21', letterSpacing: '-0.03em', lineHeight: 1, flexShrink: 0 }}>
+            {/* Row 2: title (left) + agent dropdown (right) */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 14 }}>
+              <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#111B21', letterSpacing: '-0.03em', lineHeight: 1 }}>
                 Conversas
                 {totalUnread > 0 && (
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                     marginLeft: 8, background: '#25D366', color: '#fff',
-                    borderRadius: 99, fontSize: 13, fontWeight: 700,
-                    minWidth: 24, height: 24, padding: '0 6px', verticalAlign: 'middle',
+                    borderRadius: 99, fontSize: 12, fontWeight: 700,
+                    minWidth: 22, height: 22, padding: '0 5px', verticalAlign: 'middle',
                   }}>
                     {totalUnread}
                   </span>
