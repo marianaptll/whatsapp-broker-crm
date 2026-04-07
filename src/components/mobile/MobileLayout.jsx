@@ -4,116 +4,103 @@ import MobileChatView from './MobileChatView'
 import MobileContactView from './MobileContactView'
 import MobileBottomNav from './MobileBottomNav'
 
-// View stack: 'list' → 'chat' → 'contact'
+// ─── Slide transition wrapper ─────────────────────────────────────────────────
+function SlidePane({ position, children }) {
+  // position: 'current' | 'left' | 'right'
+  const x = position === 'current' ? '0%' : position === 'left' ? '-100%' : '100%'
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      transform: `translateX(${x})`,
+      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      willChange: 'transform',
+      overflow: 'hidden',
+    }}>
+      {children}
+    </div>
+  )
+}
+
+// ─── View stack: 'list' → 'chat' → 'contact' ─────────────────────────────────
 export default function MobileLayout({
-  conversations,
-  activeId,
-  filter,
-  setFilter,
-  search,
-  setSearch,
-  onSelect,
-  onUpdate,
+  conversations, activeId, filter, setFilter,
+  search, setSearch, onSelect, onUpdate,
 }) {
-  const [view, setView] = useState('list') // 'list' | 'chat' | 'contact'
+  const [view, setView] = useState('list')
   const [activeTab, setActiveTab] = useState('conversas')
 
   const activeConv = conversations.find(c => c.id === activeId)
+  const totalUnread = conversations.filter(c => c.unread > 0).length
 
-  const handleSelectConv = (id) => {
+  const goToChat = (id) => {
     onSelect(id)
     setView('chat')
   }
 
-  const handleBackToList = () => {
-    setView('list')
-  }
-
-  const handleViewContact = () => {
-    setView('contact')
-  }
-
-  const handleBackToChat = () => {
-    setView('chat')
-  }
+  const goToList    = () => setView('list')
+  const goToContact = () => setView('contact')
+  const goToChat_   = () => setView('chat')
 
   return (
     <div style={{
-      position: 'fixed',
-      inset: 0,
-      display: 'flex',
-      flexDirection: 'column',
+      position: 'fixed', inset: 0,
+      display: 'flex', flexDirection: 'column',
       background: '#fff',
       fontFamily: "'Sora', sans-serif",
       overflow: 'hidden',
     }}>
-      {/* Main content area */}
+      {/* Page stack */}
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
 
-        {/* List view */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          transform: view === 'list' ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          willChange: 'transform',
-        }}>
+        {/* Page 1 — Chat list */}
+        <SlidePane position={view === 'list' ? 'current' : 'left'}>
           <MobileChatList
             conversations={conversations}
             activeId={activeId}
-            onSelect={handleSelectConv}
+            onSelect={goToChat}
             filter={filter}
             setFilter={setFilter}
             search={search}
             setSearch={setSearch}
-            onUpdate={onUpdate}
           />
-        </div>
+        </SlidePane>
 
-        {/* Chat view */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          transform: view === 'chat' ? 'translateX(0)' : view === 'list' ? 'translateX(100%)' : 'translateX(-100%)',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          willChange: 'transform',
-        }}>
+        {/* Page 2 — Chat view */}
+        <SlidePane position={view === 'chat' ? 'current' : view === 'list' ? 'right' : 'left'}>
           {activeConv && (
             <MobileChatView
               conv={activeConv}
               onUpdate={onUpdate}
-              onBack={handleBackToList}
-              onViewContact={handleViewContact}
+              onBack={goToList}
+              onViewContact={goToContact}
             />
           )}
-        </div>
+        </SlidePane>
 
-        {/* Contact view */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          transform: view === 'contact' ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          willChange: 'transform',
-        }}>
+        {/* Page 3 — Contact info */}
+        <SlidePane position={view === 'contact' ? 'current' : 'right'}>
           {activeConv && (
             <MobileContactView
               conv={activeConv}
               onUpdate={onUpdate}
-              onBack={handleBackToChat}
+              onBack={goToChat_}
             />
           )}
-        </div>
+        </SlidePane>
       </div>
 
-      {/* Bottom nav — only visible on list view */}
+      {/* Bottom nav — slides down when inside chat or contact */}
       <div style={{
         transform: view === 'list' ? 'translateY(0)' : 'translateY(100%)',
-        transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
         willChange: 'transform',
         flexShrink: 0,
       }}>
-        <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          unreadCount={totalUnread}
+        />
       </div>
     </div>
   )
