@@ -12,12 +12,6 @@ const REPLY_PLACEHOLDERS = [
   'Envie uma proposta personalizada...',
   'Responda com agilidade...',
 ]
-const NOTE_PLACEHOLDERS = [
-  'Escreva uma nota para o time...',
-  'Registre informações importantes...',
-  'Adicione um contexto interno...',
-]
-
 // ─── Broadcast modal (mensagem de disparo) ───────────────────────────────────
 const DISPARO_CATEGORIES = ['Boas-vindas', 'Follow-up', 'Promoção', 'Recuperação', 'Informativo']
 const DISPARO_VARS = ['{{nome}}', '{{empresa}}', '{{produto}}', '{{valor}}', '{{link}}']
@@ -687,7 +681,7 @@ function MicButton({ onDone }) {
 }
 
 // ─── Animated input ───────────────────────────────────────────────────────────
-function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio, onActiveChange }) {
+function AnimatedInput({ input, setInput, onKeyDown, onSend, onSendAudio, onActiveChange }) {
   const [isActive, setIsActive] = useState(false)
   const [placeholderIndex, setPlaceholderIndex] = useState(0)
   const [showPlaceholder, setShowPlaceholder] = useState(true)
@@ -695,7 +689,6 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
   const textareaRef = useRef(null)
 
   const expanded = isActive || !!input.trim()
-  const PLACEHOLDERS = isNote ? NOTE_PLACEHOLDERS : REPLY_PLACEHOLDERS
 
   // Cycle placeholder when collapsed and idle
   useEffect(() => {
@@ -705,12 +698,12 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
     const iv = setInterval(() => {
       setShowPlaceholder(false)
       setTimeout(() => {
-        setPlaceholderIndex(p => (p + 1) % PLACEHOLDERS.length)
+        setPlaceholderIndex(p => (p + 1) % REPLY_PLACEHOLDERS.length)
         setShowPlaceholder(true)
       }, 350)
     }, 3000)
     return () => clearInterval(iv)
-  }, [expanded, isNote])
+  }, [expanded])
 
   // Notify parent of active state
   useEffect(() => { onActiveChange?.(isActive) }, [isActive])
@@ -727,8 +720,7 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
     return () => document.removeEventListener('mousedown', handle)
   }, [isActive, input])
 
-  const borderColor = isNote ? '#fde047' : expanded ? '#3b82f6' : '#e2e8f0'
-  const bg          = isNote ? '#fefce8' : '#fff'
+  const borderColor = expanded ? '#3b82f6' : '#e2e8f0'
 
   const letterVariants = {
     initial: { opacity: 0, filter: 'blur(8px)', y: 5 },
@@ -742,28 +734,16 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
       <motion.div
         ref={wrapperRef}
-        animate={{ height: expanded ? (isNote ? 132 : 116) : 50 }}
+        animate={{ height: expanded ? 116 : 50 }}
         transition={{ type: 'spring', stiffness: 220, damping: 26 }}
         onClick={() => { if (!isActive) { setIsActive(true); textareaRef.current?.focus() } }}
         style={{
           flex: 1, border: `1.5px solid ${borderColor}`, borderRadius: 12,
-          background: bg, overflow: 'hidden', cursor: 'text',
+          background: '#fff', overflow: 'hidden', cursor: 'text',
           display: 'flex', flexDirection: 'column',
           transition: 'border-color 0.2s',
         }}
       >
-        {/* Note banner */}
-        <motion.div
-          animate={{ height: (isNote && expanded) ? 'auto' : 0, opacity: (isNote && expanded) ? 1 : 0 }}
-          transition={{ duration: 0.2 }}
-          style={{ overflow: 'hidden', flexShrink: 0 }}
-        >
-          <div style={{ padding: '6px 12px 0', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <LockIcon />
-            <span style={{ fontSize: 10.5, fontWeight: 700, color: '#a16207' }}>Nota interna — não visível ao cliente</span>
-          </div>
-        </motion.div>
-
         {/* Textarea + placeholder */}
         <div style={{ flex: 1, position: 'relative', padding: '10px 12px', minHeight: 0 }}>
           <textarea
@@ -792,12 +772,12 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
               <AnimatePresence mode="wait">
                 {showPlaceholder && !isActive && (
                   <motion.span
-                    key={`${isNote ? 'n' : 'r'}-${placeholderIndex}`}
+                    key={`r-${placeholderIndex}`}
                     style={{ color: '#94a3b8', fontSize: 13, fontFamily: 'Sora, sans-serif', lineHeight: 1.55 }}
                     variants={{ initial: {}, animate: { transition: { staggerChildren: 0.018 } }, exit: { transition: { staggerChildren: 0.01, staggerDirection: -1 } } }}
                     initial="initial" animate="animate" exit="exit"
                   >
-                    {PLACEHOLDERS[placeholderIndex].split('').map((char, i) => (
+                    {REPLY_PLACEHOLDERS[placeholderIndex].split('').map((char, i) => (
                       <motion.span key={i} variants={letterVariants} style={{ display: 'inline-block' }}>
                         {char === ' ' ? '\u00A0' : char}
                       </motion.span>
@@ -813,7 +793,7 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
         <motion.div
           animate={{ opacity: expanded ? 1 : 0, y: expanded ? 0 : 6, pointerEvents: expanded ? 'auto' : 'none' }}
           transition={{ duration: 0.2, delay: expanded ? 0.07 : 0 }}
-          style={{ display: 'flex', gap: 6, padding: '4px 10px 6px', borderTop: `1px solid ${isNote ? 'rgba(253,224,71,0.4)' : '#f1f5f9'}`, flexShrink: 0 }}
+          style={{ display: 'flex', gap: 6, padding: '4px 10px 6px', borderTop: '1px solid #f1f5f9', flexShrink: 0 }}
         >
           <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}><EmojiIcon /></button>
           <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 2, display: 'flex' }}><AttachIcon /></button>
@@ -826,7 +806,7 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
           onClick={onSend}
           style={{
             width: 42, height: 42, borderRadius: 10, flexShrink: 0,
-            background: isNote ? '#a16207' : '#3b82f6',
+            background: '#3b82f6',
             border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', transition: 'all 0.15s',
@@ -835,7 +815,7 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
           <SendIcon />
         </button>
       ) : (
-        !isNote && <MicButton onDone={onSendAudio} />
+        <MicButton onDone={onSendAudio} />
       )}
     </div>
   )
@@ -962,7 +942,6 @@ function QuickReplyChip({ item, onSelect }) {
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 export default function ChatPanel({ conv, onUpdate }) {
-  const [mode, setMode] = useState('reply')
   const [input, setInput] = useState('')
   const [inputActive, setInputActive] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
@@ -1037,11 +1016,10 @@ export default function ChatPanel({ conv, onUpdate }) {
     if (!input.trim()) return
     const newMsg = {
       id: 'm' + Date.now(),
-      type: mode === 'note' ? 'note' : 'sent',
+      type: 'sent',
       text: input.trim(),
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       date: 'Hoje',
-      ...(mode === 'note' ? { author: 'Você' } : {}),
     }
     onUpdate(conv.id, {
       messages: [...conv.messages, newMsg],
@@ -1056,7 +1034,7 @@ export default function ChatPanel({ conv, onUpdate }) {
 
   const handleInputChange = (val) => {
     setInput(val)
-    if (mode === 'note' || !val.trim()) return
+    if (!val.trim()) return
     setIsTyping(true)
     clearTimeout(typingTimerRef.current)
     typingTimerRef.current = setTimeout(() => setIsTyping(false), 1800)
@@ -1065,8 +1043,6 @@ export default function ChatPanel({ conv, onUpdate }) {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
   }
-
-  const isNote = mode === 'note'
 
   const grouped = []
   let lastDate = null
@@ -1208,8 +1184,8 @@ export default function ChatPanel({ conv, onUpdate }) {
       >
         {grouped.map((item, i) => {
           if (item._sep) return <DateSeparator key={'sep' + i} date={item.date} />
-          if (item.type === 'note')       return <NoteMessage    key={item.id} msg={item} searchQuery={trimmedSearch} isCurrentMatch={currentMatchId === item.id} />
-          if (item.type === 'received')   return <ReceivedMessage key={item.id} msg={item} conv={conv} searchQuery={trimmedSearch} isCurrentMatch={currentMatchId === item.id} />
+          if (item.type === 'note')       return null
+if (item.type === 'received')   return <ReceivedMessage key={item.id} msg={item} conv={conv} searchQuery={trimmedSearch} isCurrentMatch={currentMatchId === item.id} />
           if (item.type === 'sent-audio') return <AudioMessage   key={item.id} msg={item} />
           return <SentMessage key={item.id} msg={item} searchQuery={trimmedSearch} isCurrentMatch={currentMatchId === item.id} onDelete={() => onUpdate(conv.id, { messages: conv.messages.filter(m => m.id !== item.id) })} />
         })}
@@ -1237,81 +1213,37 @@ export default function ChatPanel({ conv, onUpdate }) {
             {/* Mode toggle + quick replies + templates button */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
 
-              {/* Mode toggle */}
-              <div style={{ display: 'flex', gap: 2, background: '#f1f5f9', borderRadius: 8, padding: 3, flexShrink: 0 }}>
-                {[
-                  {
-                    key: 'reply', label: 'Resposta',
-                    icon: (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    key: 'note', label: 'Nota interna',
-                    icon: (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                      </svg>
-                    ),
-                  },
-                ].map(m => (
-                  <button
-                    key={m.key}
-                    onClick={() => setMode(m.key)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      padding: '4px 12px', borderRadius: 6, border: 'none',
-                      background: mode === m.key ? '#fff' : 'transparent',
-                      color: mode === m.key ? (m.key === 'note' ? '#a16207' : '#4356a0') : '#94a3b8',
-                      fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
-                      boxShadow: mode === m.key ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {m.icon}
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-
               {/* Quick replies dropdown button */}
-              {!isNote && (
-                <QuickRepliesDropdown onSelect={t => setInput(t)} />
-              )}
+              <QuickRepliesDropdown onSelect={t => setInput(t)} />
 
               {/* Templates button */}
-              {!isNote && (
-                <button
-                  onClick={() => setShowBroadcast(true)}
-                  style={{
-                    marginLeft: 'auto',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    padding: '5px 14px', borderRadius: 8,
-                    background: 'transparent',
-                    border: '1px solid #cbd5e1',
-                    color: '#64748b',
-                    fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
-                    transition: 'all 0.15s',
-                    flexShrink: 0,
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#cbd5e1' }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/>
-                  </svg>
-                  Templates
-                </button>
-              )}
+              <button
+                onClick={() => setShowBroadcast(true)}
+                style={{
+                  marginLeft: 'auto',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '5px 14px', borderRadius: 8,
+                  background: 'transparent',
+                  border: '1px solid #cbd5e1',
+                  color: '#64748b',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
+                  transition: 'all 0.15s',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#cbd5e1' }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/>
+                </svg>
+                Templates
+              </button>
             </div>
 
             {/* Animated textarea + send */}
             <AnimatedInput
               input={input}
               setInput={handleInputChange}
-              isNote={isNote}
               onKeyDown={handleKeyDown}
               onSend={handleSend}
               onActiveChange={setInputActive}

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Avatar from '../ui/Avatar'
 import { Section, Row } from '../ui/Section'
-import { WaIcon } from '../ui/Icons'
+import { WaIcon, LockIcon } from '../ui/Icons'
 import { AGENTS, THERMO_LEVELS, getThermoLevel } from '../../data/mockData'
 
 function LeadThermometer({ conv }) {
@@ -56,6 +56,23 @@ function LeadThermometer({ conv }) {
 export default function ContactPanel({ conv, onUpdate, open, onToggle }) {
   const [sections, setSections] = useState({ info: true, deal: true })
   const toggle = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }))
+  const [noteInput, setNoteInput] = useState('')
+  const noteRef = useRef(null)
+
+  const handleAddNote = () => {
+    if (!noteInput.trim() || !conv) return
+    const newMsg = {
+      id: 'm' + Date.now(),
+      type: 'note',
+      text: noteInput.trim(),
+      author: 'Você',
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      date: 'Hoje',
+    }
+    onUpdate(conv.id, { messages: [...conv.messages, newMsg] })
+    setNoteInput('')
+    noteRef.current?.blur()
+  }
 
   const agent = conv ? AGENTS.find(a => a.id === conv.assignedTo) : null
 
@@ -163,6 +180,56 @@ export default function ContactPanel({ conv, onUpdate, open, onToggle }) {
                   <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.03em' }}>{conv.dealValue}</div>
                 </div>
               )}
+
+              {/* Notas internas */}
+              <div style={{ marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 8 }}>
+                  <LockIcon />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#a16207', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Notas internas</span>
+                </div>
+
+                {/* Notas existentes */}
+                {conv.messages.filter(m => m.type === 'note').map(note => (
+                  <div key={note.id} style={{
+                    background: '#fefce8', border: '1px solid #fde047',
+                    borderRadius: 8, padding: '8px 10px', marginBottom: 6,
+                  }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#1e293b', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{note.text}</p>
+                    <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, display: 'block' }}>{note.author} · {note.time}</span>
+                  </div>
+                ))}
+
+                {/* Input nova nota */}
+                <textarea
+                  ref={noteRef}
+                  value={noteInput}
+                  onChange={e => setNoteInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddNote() } }}
+                  placeholder="Escreva uma nota para o time..."
+                  rows={2}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    border: '1.5px solid #fde047', borderRadius: 8,
+                    background: '#fefce8', padding: '8px 10px',
+                    fontSize: 12, color: '#1e293b', fontFamily: 'Sora, sans-serif',
+                    resize: 'none', outline: 'none', lineHeight: 1.5,
+                  }}
+                />
+                <button
+                  onClick={handleAddNote}
+                  disabled={!noteInput.trim()}
+                  style={{
+                    marginTop: 6, width: '100%', padding: '6px 0',
+                    borderRadius: 7, border: 'none', cursor: noteInput.trim() ? 'pointer' : 'default',
+                    background: noteInput.trim() ? '#a16207' : '#e2e8f0',
+                    color: noteInput.trim() ? '#fff' : '#94a3b8',
+                    fontSize: 12, fontWeight: 700, fontFamily: 'Sora, sans-serif',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  Salvar nota
+                </button>
+              </div>
             </Section>
           </>
         )}
