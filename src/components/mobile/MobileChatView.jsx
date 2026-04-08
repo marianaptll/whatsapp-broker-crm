@@ -3,14 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import Avatar from '../ui/Avatar'
 import StatusBadge from '../ui/StatusBadge'
 import { LockIcon, DoubleCheckIcon, SendIcon } from '../ui/Icons'
-import { AGENTS } from '../../data/mockData'
-
-const QUICK_REPLIES = [
-  { label: '👋 Saudação',   text: 'Olá! Como posso te ajudar hoje?' },
-  { label: '🔄 Follow-up',  text: 'Tudo bem? Passando pra saber se você teve a oportunidade de analisar nossa proposta.' },
-  { label: '⏳ Aguardar',   text: 'Vou verificar isso agora e te retorno em instantes.' },
-  { label: '✅ Fechamento', text: 'Perfeito! Vou preparar a proposta e envio ainda hoje.' },
-]
+import { AGENTS, QUICK_REPLIES } from '../../data/mockData'
 
 // ─── Message components ───────────────────────────────────────────────────────
 function DateSeparator({ date }) {
@@ -505,7 +498,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
             padding: '4px 0', textAlign: 'left', minWidth: 0,
           }}
         >
-          <Avatar initials={conv.avatar} color={conv.avatarColor} size={38} />
+          <Avatar initials={conv.avatar} color={conv.avatarColor} size={38} online={conv.isOnline === true} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
               color: '#fff', fontWeight: 700, fontSize: 15.5,
@@ -515,7 +508,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
               {conv.contactName}
             </div>
             <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 1 }}>
-              {conv.contactCompany || conv.contactPhone}
+              {conv.isOnline ? 'online' : (conv.contactCompany || conv.contactPhone)}
             </div>
           </div>
         </button>
@@ -541,7 +534,6 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
         flex: 1, overflowY: 'auto', padding: '14px 10px 8px',
         display: 'flex', flexDirection: 'column',
         background: chatBg, WebkitOverflowScrolling: 'touch',
-        transition: 'background 0.3s ease',
       }}>
         {grouped.map((item, i) => {
           if (item._sep) return <DateSeparator key={'sep' + i} date={item.date} />

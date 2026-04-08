@@ -1,24 +1,7 @@
 import { useState } from 'react'
 import Avatar from '../ui/Avatar'
 import { WaIcon } from '../ui/Icons'
-import { AGENTS } from '../../data/mockData'
-
-const THERMO_LEVELS = [
-  { key: 'sem-perfil', label: 'Sem Perfil', icon: '🧊' },
-  { key: 'indefinido', label: 'Indefinido', icon: '😐' },
-  { key: 'potencial',  label: 'Em potencial', icon: '🔥' },
-]
-
-function getThermoLevel(conv) {
-  const highTags  = ['t4', 't5']
-  const hotStages = ['Proposta Enviada', 'Fechamento', 'Negociação', 'Contrato Pendente', 'Negociação Final']
-  const hasHighTag = conv.tags.some(t => highTags.includes(t))
-  const isHotStage = hotStages.includes(conv.leadStage)
-  const isCold = conv.leadStage === 'Primeiro Contato' && !hasHighTag
-  if (hasHighTag || isHotStage) return 2
-  if (isCold) return 0
-  return 1
-}
+import { AGENTS, THERMO_LEVELS, getThermoLevel } from '../../data/mockData'
 
 // ─── Settings-style row ───────────────────────────────────────────────────────
 function InfoRow({ icon, label, value, isNode, noBorder }) {
@@ -71,7 +54,7 @@ function Section({ title, children, open, onToggle }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function MobileContactView({ conv, onBack, onBackToChat }) {
+export default function MobileContactView({ conv, onBack }) {
   const [sections, setSections] = useState({ info: true, deal: true, lead: true })
   const toggle = key => setSections(prev => ({ ...prev, [key]: !prev[key] }))
 

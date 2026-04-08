@@ -1,16 +1,36 @@
+export function isWithin24h(lastTime) {
+  return /^\d{1,2}:\d{2}$/.test(lastTime)
+}
+
+export const THERMO_LEVELS = [
+  { key: 'sem-perfil', label: 'Sem Perfil',   icon: '🧊' },
+  { key: 'indefinido', label: 'Indefinido',   icon: '😐' },
+  { key: 'potencial',  label: 'Em potencial', icon: '🔥' },
+]
+
+export function getThermoLevel(conv) {
+  const highTags  = ['t4', 't5']
+  const hotStages = ['Proposta Enviada', 'Fechamento', 'Negociação', 'Contrato Pendente', 'Negociação Final']
+  const hasHighTag = conv.tags.some(t => highTags.includes(t))
+  const isHotStage = hotStages.includes(conv.leadStage)
+  const isCold     = conv.leadStage === 'Primeiro Contato' && !hasHighTag
+  if (hasHighTag || isHotStage) return 2
+  if (isCold)                   return 0
+  return 1
+}
+
+export const QUICK_REPLIES = [
+  { label: '👋 Saudação',   text: 'Olá! Como posso te ajudar hoje?' },
+  { label: '🔄 Follow-up',  text: 'Tudo bem? Passando pra saber se você teve a oportunidade de analisar nossa proposta.' },
+  { label: '⏳ Aguardar',   text: 'Vou verificar isso agora e te retorno em instantes.' },
+  { label: '✅ Fechamento', text: 'Perfeito! Vou preparar a proposta e envio ainda hoje.' },
+]
+
 export const AGENTS = [
   { id: 'a1', name: 'Você',        avatar: 'V',  color: '#3b82f6' },
   { id: 'a2', name: 'Carla Lima',  avatar: 'CL', color: '#8b5cf6' },
   { id: 'a3', name: 'Rafa Costa',  avatar: 'RC', color: '#0f766e' },
   { id: 'a4', name: 'João Brito',  avatar: 'JB', color: '#ea580c' },
-]
-
-export const TAGS = [
-  { id: 't1', label: 'Lead',        color: '#3b82f6', bg: '#d3ebff' },
-  { id: 't2', label: 'Suporte',     color: '#0f766e', bg: '#aee4dc' },
-  { id: 't3', label: 'Financeiro',  color: '#92400e', bg: '#fbebbb' },
-  { id: 't4', label: 'VIP',         color: '#b72964', bg: '#f9a8d4' },
-  { id: 't5', label: 'Qualificado', color: '#15803d', bg: '#cefbe5' },
 ]
 
 export const INITIAL_CONVERSATIONS = [
@@ -22,6 +42,7 @@ export const INITIAL_CONVERSATIONS = [
     contactCompany: 'Autônoma',
     contactJob: 'Fisioterapeuta',
     avatar: 'AS', avatarColor: '#8b5cf6',
+    isOnline: true,
     channel: 'whatsapp',
     status: 'open',
     assignedTo: 'a1',
@@ -87,7 +108,7 @@ export const INITIAL_CONVERSATIONS = [
     contactEmail: 'camila.f@hotmail.com',
     contactCompany: 'CLT',
     contactJob: 'Enfermeira',
-    avatar: 'CF', avatarColor: '#b72964',
+    avatar: 'CF', avatarColor: '#b72964', isOnline: true,
     channel: 'whatsapp',
     status: 'open',
     assignedTo: 'a3',
@@ -203,7 +224,7 @@ export const INITIAL_CONVERSATIONS = [
     contactEmail: 'gabi.mendes@outlook.com',
     contactCompany: 'CLT',
     contactJob: 'Professora',
-    avatar: 'GM', avatarColor: '#b72964',
+    avatar: 'GM', avatarColor: '#b72964', isOnline: true,
     channel: 'whatsapp',
     status: 'open',
     assignedTo: 'a1',
@@ -289,7 +310,7 @@ export const INITIAL_CONVERSATIONS = [
     contactEmail: 'lucas.drum@gmail.com',
     contactCompany: 'Autônomo',
     contactJob: 'Eletricista',
-    avatar: 'LD', avatarColor: '#7c6347',
+    avatar: 'LD', avatarColor: '#7c6347', isOnline: true,
     channel: 'whatsapp',
     status: 'closed',
     assignedTo: 'a1',

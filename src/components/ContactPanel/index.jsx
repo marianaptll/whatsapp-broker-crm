@@ -2,26 +2,7 @@ import { useState } from 'react'
 import Avatar from '../ui/Avatar'
 import { Section, Row } from '../ui/Section'
 import { WaIcon } from '../ui/Icons'
-import { AGENTS } from '../../data/mockData'
-
-const THERMO_LEVELS = [
-  { key: 'sem-perfil', label: 'Sem Perfil',   icon: '🧊' },
-  { key: 'indefinido', label: 'Indefinido',   icon: '😐' },
-  { key: 'potencial',  label: 'Em potencial', icon: '🔥' },
-]
-
-function getThermoLevel(conv) {
-  const highTags  = ['t4', 't5']
-  const hotStages = ['Proposta Enviada', 'Fechamento', 'Negociação', 'Contrato Pendente', 'Negociação Final']
-
-  const hasHighTag = conv.tags.some(t => highTags.includes(t))
-  const isHotStage = hotStages.includes(conv.leadStage)
-  const isCold     = conv.leadStage === 'Primeiro Contato' && !hasHighTag
-
-  if (hasHighTag || isHotStage) return 2 // Em potencial
-  if (isCold)                   return 0 // Sem perfil
-  return 1                               // Indefinido
-}
+import { AGENTS, THERMO_LEVELS, getThermoLevel } from '../../data/mockData'
 
 function LeadThermometer({ conv }) {
   const current = getThermoLevel(conv)

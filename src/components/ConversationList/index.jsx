@@ -1,11 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { SearchIcon } from '../ui/Icons'
 import ConvItem from './ConvItem'
-import { AGENTS } from '../../data/mockData'
-
-function isWithin24h(lastTime) {
-  return /^\d{1,2}:\d{2}$/.test(lastTime)
-}
+import { AGENTS, isWithin24h } from '../../data/mockData'
 
 function filterConversations(conversations, filter, search) {
   return conversations.filter(c => {

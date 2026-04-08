@@ -1,5 +1,4 @@
 import Avatar from '../ui/Avatar'
-import { WaIcon } from '../ui/Icons'
 import { AGENTS } from '../../data/mockData'
 
 function getSlaInfo(conv) {
@@ -38,11 +37,8 @@ export default function ConvItem({ conv, active, onClick, onUpdate }) {
       }}
     >
       {/* Avatar */}
-      <div style={{ position: 'relative', marginTop: 2, flexShrink: 0 }}>
-        <Avatar initials={conv.avatar} color={conv.avatarColor} size={36} />
-        <div style={{ position: 'absolute', bottom: -1, right: -1, background: '#f8fafc', borderRadius: '50%', padding: 1 }}>
-          <WaIcon size={11} />
-        </div>
+      <div style={{ marginTop: 2 }}>
+        <Avatar initials={conv.avatar} color={conv.avatarColor} size={36} online={conv.isOnline === true} />
       </div>
 
       {/* Content */}

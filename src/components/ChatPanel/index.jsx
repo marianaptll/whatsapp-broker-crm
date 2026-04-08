@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import Avatar from '../ui/Avatar'
 import StatusBadge from '../ui/StatusBadge'
 import { WaIcon, SendIcon, AttachIcon, EmojiIcon, LockIcon, DoubleCheckIcon } from '../ui/Icons'
-import { AGENTS } from '../../data/mockData'
+import { AGENTS, QUICK_REPLIES } from '../../data/mockData'
 
 // ─── Animated input placeholders ─────────────────────────────────────────────
 const REPLY_PLACEHOLDERS = [
@@ -16,14 +16,6 @@ const NOTE_PLACEHOLDERS = [
   'Escreva uma nota para o time...',
   'Registre informações importantes...',
   'Adicione um contexto interno...',
-]
-
-// ─── Quick replies (mensagens prontas) ───────────────────────────────────────
-const QUICK_REPLIES = [
-  { label: '👋 Saudação',   text: 'Olá! Como posso te ajudar hoje?' },
-  { label: '🔄 Follow-up',  text: 'Tudo bem? Passando pra saber se você teve a oportunidade de analisar nossa proposta.' },
-  { label: '⏳ Aguardar',   text: 'Vou verificar isso agora e te retorno em instantes.' },
-  { label: '✅ Fechamento', text: 'Perfeito! Vou preparar a proposta e envio ainda hoje.' },
 ]
 
 // ─── Broadcast modal (mensagem de disparo) ───────────────────────────────────
@@ -275,6 +267,38 @@ function MessageActions({ isMe, onCopy, onDelete }) {
   )
 }
 
+// ─── Search highlight helper ─────────────────────────────────────────────────
+function highlightText(text, query, isCurrentMatch) {
+  if (!query || !text) return text
+  const q = query.toLowerCase()
+  const result = []
+  let str = text
+  let lc = str.toLowerCase()
+  let k = 0
+  let firstMatch = isCurrentMatch
+
+  while (str.length > 0) {
+    const idx = lc.indexOf(q)
+    if (idx === -1) { result.push(str); break }
+    if (idx > 0) result.push(str.slice(0, idx))
+    result.push(
+      <mark
+        key={k++}
+        style={{
+          background: firstMatch ? '#f59e0b' : '#fde68a',
+          color: '#92400e', borderRadius: 2, padding: '0 2px', fontWeight: 600,
+        }}
+      >
+        {str.slice(idx, idx + q.length)}
+      </mark>
+    )
+    str = str.slice(idx + q.length)
+    lc = str.toLowerCase()
+    firstMatch = false
+  }
+  return result.length === 1 && typeof result[0] === 'string' ? result[0] : result
+}
+
 // ─── Chat components ──────────────────────────────────────────────────────────
 function DateSeparator({ date }) {
   return (
@@ -286,16 +310,16 @@ function DateSeparator({ date }) {
   )
 }
 
-function NoteMessage({ msg }) {
+function NoteMessage({ msg, searchQuery, isCurrentMatch }) {
   return (
-    <div className="fade-up" style={{ alignSelf: 'center', maxWidth: '75%', marginBottom: 8, marginTop: 4 }}>
-      <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 8, padding: '9px 13px' }}>
+    <div className="fade-up" data-msg-id={msg.id} style={{ alignSelf: 'center', maxWidth: '75%', marginBottom: 8, marginTop: 4 }}>
+      <div style={{ background: '#fef9c3', border: isCurrentMatch ? '1.5px solid #f59e0b' : '1px solid #fde047', borderRadius: 8, padding: '9px 13px', transition: 'border-color 0.2s' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
           <LockIcon />
           <span style={{ fontSize: 10.5, fontWeight: 700, color: '#a16207' }}>Nota interna</span>
           <span style={{ fontSize: 10, color: '#ca8a04', marginLeft: 4 }}>· {msg.author}</span>
         </div>
-        <p style={{ margin: 0, fontSize: 13, color: '#78350f', lineHeight: 1.55 }}>{msg.text}</p>
+        <p style={{ margin: 0, fontSize: 13, color: '#78350f', lineHeight: 1.55 }}>{highlightText(msg.text, searchQuery, isCurrentMatch)}</p>
         <div style={{ textAlign: 'right', marginTop: 4 }}>
           <span style={{ fontSize: 10, color: '#a16207' }}>{msg.time}</span>
         </div>
@@ -304,11 +328,12 @@ function NoteMessage({ msg }) {
   )
 }
 
-function ReceivedMessage({ msg, conv }) {
+function ReceivedMessage({ msg, conv, searchQuery, isCurrentMatch }) {
   const [hov, setHov] = useState(false)
   return (
     <div
       className="fade-up"
+      data-msg-id={msg.id}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 4, alignSelf: 'flex-start', maxWidth: '70%' }}
@@ -316,8 +341,8 @@ function ReceivedMessage({ msg, conv }) {
       <Avatar initials={conv.avatar} color={conv.avatarColor} size={28} />
       <div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
-          <div className="msg-in" style={{ background: '#fff', padding: '9px 13px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{msg.text}</p>
+          <div className="msg-in" style={{ background: '#fff', padding: '9px 13px', boxShadow: isCurrentMatch ? '0 0 0 2px #f59e0b' : '0 1px 3px rgba(0,0,0,0.08)', transition: 'box-shadow 0.2s' }}>
+            <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{highlightText(msg.text, searchQuery, isCurrentMatch)}</p>
           </div>
           <div style={{ opacity: hov ? 1 : 0, transition: 'opacity 0.15s', marginBottom: 2 }}>
             <MessageActions isMe={false} onCopy={() => navigator.clipboard?.writeText(msg.text)} onDelete={() => {}} />
@@ -329,11 +354,12 @@ function ReceivedMessage({ msg, conv }) {
   )
 }
 
-function SentMessage({ msg, onDelete }) {
+function SentMessage({ msg, onDelete, searchQuery, isCurrentMatch }) {
   const [hov, setHov] = useState(false)
   return (
     <div
       className="fade-up"
+      data-msg-id={msg.id}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 4, alignSelf: 'flex-end', maxWidth: '70%', flexDirection: 'row-reverse' }}
@@ -341,8 +367,8 @@ function SentMessage({ msg, onDelete }) {
       <Avatar initials="V" color="#4356a0" size={28} />
       <div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: 'row-reverse' }}>
-          <div className="msg-out" style={{ background: '#dcf8c6', padding: '9px 13px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-            <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{msg.text}</p>
+          <div className="msg-out" style={{ background: '#dcf8c6', padding: '9px 13px', boxShadow: isCurrentMatch ? '0 0 0 2px #f59e0b' : '0 1px 3px rgba(0,0,0,0.08)', transition: 'box-shadow 0.2s' }}>
+            <p style={{ margin: 0, fontSize: 13.5, color: '#1e293b', lineHeight: 1.6 }}>{highlightText(msg.text, searchQuery, isCurrentMatch)}</p>
           </div>
           <div style={{ opacity: hov ? 1 : 0, transition: 'opacity 0.15s', marginBottom: 2 }}>
             <MessageActions isMe={true} onCopy={() => navigator.clipboard?.writeText(msg.text)} onDelete={onDelete} />
@@ -537,17 +563,17 @@ function WallpaperModal({ current, onSelect, onClose }) {
 }
 
 // ─── Typing indicator ────────────────────────────────────────────────────────
-function TypingIndicator({ conv }) {
+function TypingIndicator() {
   return (
-    <div className="fade-up" style={{ display: 'flex', alignItems: 'flex-end', gap: 8, alignSelf: 'flex-start', marginBottom: 4 }}>
-      <Avatar initials={conv.avatar} color={conv.avatarColor} size={28} />
-      <div className="msg-in" style={{ background: '#fff', padding: '8px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: 4 }}>
+    <div className="fade-up" style={{ display: 'flex', alignItems: 'flex-end', gap: 6, alignSelf: 'flex-end', flexDirection: 'row-reverse', marginBottom: 4 }}>
+      <Avatar initials="V" color="#4356a0" size={28} />
+      <div className="msg-out" style={{ background: '#dcf8c6', padding: '8px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: 4 }}>
         {[0, 0.15, 0.3].map((delay, i) => (
           <motion.div
             key={i}
             animate={{ y: [0, -5, 0] }}
             transition={{ duration: 0.6, repeat: Infinity, ease: 'easeInOut', delay }}
-            style={{ width: 6, height: 6, borderRadius: '50%', background: '#94a3b8' }}
+            style={{ width: 6, height: 6, borderRadius: '50%', background: '#4356a0' }}
           />
         ))}
       </div>
@@ -618,7 +644,7 @@ function MicButton({ onDone }) {
         title="Cancelar"
         style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
       >
-        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
       </button>
 
       {/* Timer + pulse */}
@@ -655,10 +681,7 @@ function MicButton({ onDone }) {
       onMouseEnter={e => { if (!denied) { e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#334155' } }}
       onMouseLeave={e => { if (!denied) { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b' } }}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="9" y="2" width="6" height="12" rx="3"/>
-        <path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/>
-      </svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1 1.93c-3.95-.49-7-3.85-7-7.93H2c0 4.97 3.58 9.09 8.33 9.84V22h3v-4.23c4.75-.75 8.33-4.87 8.33-9.84H19c0 4.08-3.05 7.44-7 7.93V16h-1v-.07z"/></svg>
     </button>
   )
 }
@@ -803,7 +826,7 @@ function AnimatedInput({ input, setInput, isNote, onKeyDown, onSend, onSendAudio
           onClick={onSend}
           style={{
             width: 42, height: 42, borderRadius: 10, flexShrink: 0,
-            background: isNote ? '#a16207' : '#25D366',
+            background: isNote ? '#a16207' : '#3b82f6',
             border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#fff', transition: 'all 0.15s',
@@ -852,10 +875,13 @@ function QuickRepliesDropdown({ onSelect }) {
           fontFamily: 'Sora, sans-serif', transition: 'all 0.13s',
         }}
       >
-        ⚡ Respostas rápidas
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/>
+          </svg>
+          Respostas rápidas
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"
           style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', opacity: 0.5 }}>
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
         </svg>
       </button>
 
@@ -944,12 +970,30 @@ export default function ChatPanel({ conv, onUpdate }) {
   const [showWallpaper, setShowWallpaper] = useState(false)
   const [chatBg, setChatBg] = useState('#afc3e4')
   const [isTyping, setIsTyping] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchIndex, setSearchIndex] = useState(0)
   const typingTimerRef = useRef(null)
   const messagesEndRef = useRef(null)
+  const searchInputRef = useRef(null)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [conv?.messages])
+    if (!showSearch) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [conv?.messages, showSearch])
+
+  useEffect(() => {
+    if (showSearch) searchInputRef.current?.focus()
+  }, [showSearch])
+
+  useEffect(() => {
+    setShowSearch(false)
+    setSearchQuery('')
+    setSearchIndex(0)
+  }, [conv?.id])
+
+  useEffect(() => {
+    setSearchIndex(0)
+  }, [searchQuery])
 
   // Simulate typing indicator when switching to a conversation with unread messages
   useEffect(() => {
@@ -963,6 +1007,20 @@ export default function ChatPanel({ conv, onUpdate }) {
     }, 600)
     return () => clearTimeout(delay)
   }, [conv?.id])
+
+  const trimmedSearch = searchQuery.trim().toLowerCase()
+  const searchMatches = conv && trimmedSearch
+    ? conv.messages.filter(m => m.text?.toLowerCase().includes(trimmedSearch)).map(m => m.id)
+    : []
+  const clampedIndex = Math.min(searchIndex, Math.max(0, searchMatches.length - 1))
+  const currentMatchId = searchMatches[clampedIndex] || null
+
+  // Scroll to current match
+  useEffect(() => {
+    if (!currentMatchId) return
+    const el = document.querySelector(`[data-msg-id="${currentMatchId}"]`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [currentMatchId])
 
   if (!conv) {
     return (
@@ -1025,15 +1083,32 @@ export default function ChatPanel({ conv, onUpdate }) {
 
       {/* Header */}
       <div style={{ padding: '10px 20px', background: '#fff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', flexShrink: 0 }}>
-        <Avatar initials={conv.avatar} color={conv.avatarColor} size={36} />
+        <Avatar initials={conv.avatar} color={conv.avatarColor} size={36} online={conv.isOnline === true} />
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', letterSpacing: '-0.02em' }}>{conv.contactName}</span>
+            {conv.isOnline && (
+              <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600, letterSpacing: '0.01em' }}>online</span>
+            )}
             <StatusBadge status={conv.status} lastTime={conv.lastTime} />
           </div>
           <span style={{ fontSize: 11, color: '#94a3b8' }}>{conv.contactPhone} · {conv.contactCompany}</span>
         </div>
 
+        {/* Search button */}
+        <button
+          onClick={() => setShowSearch(s => !s)}
+          title="Buscar na conversa"
+          style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #e2e8f0', background: showSearch ? '#eef2ff' : '#f8fafc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: showSearch ? '#4356a0' : '#64748b', flexShrink: 0, transition: 'all 0.13s' }}
+          onMouseEnter={e => { if (!showSearch) { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#cbd5e1' } }}
+          onMouseLeave={e => { if (!showSearch) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0' } }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+        </button>
+
+        {/* Wallpaper button */}
         <button
           onClick={() => setShowWallpaper(true)}
           title="Personalizar fundo"
@@ -1041,11 +1116,87 @@ export default function ChatPanel({ conv, onUpdate }) {
           onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#cbd5e1' }}
           onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e2e8f0' }}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
           </svg>
         </button>
       </div>
+
+      {/* Search bar */}
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            key="search-bar"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            style={{ overflow: 'hidden', flexShrink: 0 }}
+          >
+            <div style={{ padding: '8px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Input */}
+              <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#94a3b8" style={{ position: 'absolute', left: 10, pointerEvents: 'none' }}>
+                  <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <input
+                  ref={searchInputRef}
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (e.shiftKey) setSearchIndex(i => i <= 0 ? searchMatches.length - 1 : i - 1)
+                      else setSearchIndex(i => i >= searchMatches.length - 1 ? 0 : i + 1)
+                    }
+                    if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(''); setSearchIndex(0) }
+                  }}
+                  placeholder="Buscar na conversa..."
+                  style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px 6px 32px', fontSize: 13, outline: 'none', background: '#fff', color: '#1e293b', fontFamily: 'Sora, sans-serif' }}
+                />
+              </div>
+
+              {/* Counter */}
+              <span style={{ fontSize: 12, color: searchQuery && searchMatches.length === 0 ? '#ef4444' : '#64748b', whiteSpace: 'nowrap', minWidth: 60, textAlign: 'center' }}>
+                {searchQuery.trim()
+                  ? searchMatches.length === 0
+                    ? 'Sem resultado'
+                    : `${clampedIndex + 1} de ${searchMatches.length}`
+                  : ''}
+              </span>
+
+              {/* Nav up */}
+              <button
+                onClick={() => setSearchIndex(i => i <= 0 ? searchMatches.length - 1 : i - 1)}
+                disabled={searchMatches.length < 2}
+                title="Anterior (Shift+Enter)"
+                style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: searchMatches.length < 2 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: searchMatches.length < 2 ? '#cbd5e1' : '#475569', flexShrink: 0 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+              </button>
+
+              {/* Nav down */}
+              <button
+                onClick={() => setSearchIndex(i => i >= searchMatches.length - 1 ? 0 : i + 1)}
+                disabled={searchMatches.length < 2}
+                title="Próximo (Enter)"
+                style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: searchMatches.length < 2 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: searchMatches.length < 2 ? '#cbd5e1' : '#475569', flexShrink: 0 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
+              </button>
+
+              {/* Close */}
+              <button
+                onClick={() => { setShowSearch(false); setSearchQuery(''); setSearchIndex(0) }}
+                title="Fechar busca (Esc)"
+                style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', flexShrink: 0 }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Messages */}
       <div
@@ -1053,15 +1204,14 @@ export default function ChatPanel({ conv, onUpdate }) {
           flex: 1, overflowY: 'auto', padding: '20px 24px',
           display: 'flex', flexDirection: 'column', gap: 2,
           background: chatBg,
-          transition: 'background 0.3s ease',
         }}
       >
         {grouped.map((item, i) => {
           if (item._sep) return <DateSeparator key={'sep' + i} date={item.date} />
-          if (item.type === 'note')       return <NoteMessage    key={item.id} msg={item} />
-          if (item.type === 'received')   return <ReceivedMessage key={item.id} msg={item} conv={conv} />
+          if (item.type === 'note')       return <NoteMessage    key={item.id} msg={item} searchQuery={trimmedSearch} isCurrentMatch={currentMatchId === item.id} />
+          if (item.type === 'received')   return <ReceivedMessage key={item.id} msg={item} conv={conv} searchQuery={trimmedSearch} isCurrentMatch={currentMatchId === item.id} />
           if (item.type === 'sent-audio') return <AudioMessage   key={item.id} msg={item} />
-          return <SentMessage key={item.id} msg={item} onDelete={() => onUpdate(conv.id, { messages: conv.messages.filter(m => m.id !== item.id) })} />
+          return <SentMessage key={item.id} msg={item} searchQuery={trimmedSearch} isCurrentMatch={currentMatchId === item.id} onDelete={() => onUpdate(conv.id, { messages: conv.messages.filter(m => m.id !== item.id) })} />
         })}
         <AnimatePresence>
           {isTyping && (
@@ -1072,7 +1222,7 @@ export default function ChatPanel({ conv, onUpdate }) {
               exit={{ opacity: 0, y: 4 }}
               transition={{ duration: 0.2 }}
             >
-              <TypingIndicator conv={conv} />
+              <TypingIndicator />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1090,13 +1240,28 @@ export default function ChatPanel({ conv, onUpdate }) {
               {/* Mode toggle */}
               <div style={{ display: 'flex', gap: 2, background: '#f1f5f9', borderRadius: 8, padding: 3, flexShrink: 0 }}>
                 {[
-                  { key: 'reply', label: '↩ Resposta' },
-                  { key: 'note',  label: '🔒 Nota interna' },
+                  {
+                    key: 'reply', label: 'Resposta',
+                    icon: (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    key: 'note', label: 'Nota interna',
+                    icon: (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                      </svg>
+                    ),
+                  },
                 ].map(m => (
                   <button
                     key={m.key}
                     onClick={() => setMode(m.key)}
                     style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
                       padding: '4px 12px', borderRadius: 6, border: 'none',
                       background: mode === m.key ? '#fff' : 'transparent',
                       color: mode === m.key ? (m.key === 'note' ? '#a16207' : '#4356a0') : '#94a3b8',
@@ -1105,6 +1270,7 @@ export default function ChatPanel({ conv, onUpdate }) {
                       transition: 'all 0.15s',
                     }}
                   >
+                    {m.icon}
                     {m.label}
                   </button>
                 ))}
@@ -1123,18 +1289,20 @@ export default function ChatPanel({ conv, onUpdate }) {
                     marginLeft: 'auto',
                     display: 'flex', alignItems: 'center', gap: 6,
                     padding: '5px 14px', borderRadius: 8,
-                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                    border: 'none',
-                    color: '#fff',
-                    fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
-                    boxShadow: '0 2px 8px rgba(59,130,246,0.35)',
+                    background: 'transparent',
+                    border: '1px solid #cbd5e1',
+                    color: '#64748b',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
                     transition: 'all 0.15s',
                     flexShrink: 0,
                   }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#cbd5e1' }}
                 >
-                  ⚡ Templates
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/>
+                  </svg>
+                  Templates
                 </button>
               )}
             </div>

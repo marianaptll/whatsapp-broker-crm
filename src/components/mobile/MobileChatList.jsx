@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Avatar from '../ui/Avatar'
-import { WaIcon } from '../ui/Icons'
-import { AGENTS } from '../../data/mockData'
+import { AGENTS, isWithin24h } from '../../data/mockData'
 import logoClaro from '../../imagem/logo_leadhub_claro.png'
-
-function isWithin24h(t) { return /^\d{1,2}:\d{2}$/.test(t) }
 
 // ─── Filter logic ─────────────────────────────────────────────────────────────
 function filterConversations(conversations, agentFilter, statusFilter, search) {
@@ -52,7 +49,7 @@ function ConvItem({ conv, onClick }) {
       }}
     >
       <div style={{ flexShrink: 0 }}>
-        <Avatar initials={conv.avatar} color={conv.avatarColor} size={50} />
+        <Avatar initials={conv.avatar} color={conv.avatarColor} size={50} online={conv.isOnline === true} />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>

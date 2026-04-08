@@ -22,7 +22,7 @@ const MENU_SECTIONS = [
     items: [
       { key: 'agenda',       label: 'Agenda',       icon: <AgendaIcon /> },
       { key: 'leads',        label: 'Leads',        icon: <LeadsIcon /> },
-      { key: 'conversas',    label: 'Conversas',    icon: <WaIcon size={16} />, active: true },
+      { key: 'conversas',    label: 'Conversas',    icon: <WaIcon size={16} /> },
       { key: 'acessos',      label: 'Acessos',      icon: <AcessosIcon /> },
       { key: 'distribuicao', label: 'Distribuição', icon: <DistribuicaoIcon /> },
       { key: 'relatorios',   label: 'Relatórios',   icon: <RelatoriosIcon /> },
@@ -30,7 +30,7 @@ const MENU_SECTIONS = [
   },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ activePage = 'conversas', onNavigate }) {
   return (
     <div style={{
       width: 200,
@@ -64,29 +64,33 @@ export default function Sidebar() {
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: '#94a3b8', padding: '10px 8px 4px' }}>
               {section.label}
             </div>
-            {section.items.map(item => (
-              <button
-                key={item.key}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  width: '100%', padding: '8px 10px', borderRadius: 8, border: 'none',
-                  background: item.active ? '#d3ebff' : 'transparent',
-                  color: item.active ? '#1d4ed8' : '#475569',
-                  fontSize: 13, fontWeight: item.active ? 700 : 500,
-                  fontFamily: 'Sora, sans-serif', cursor: 'pointer',
-                  textAlign: 'left', transition: 'all 0.13s',
-                  outline: item.active ? '1.5px solid #93c5fd' : 'none',
-                }}
-                onMouseEnter={e => { if (!item.active) e.currentTarget.style.background = '#f8fafc' }}
-                onMouseLeave={e => { if (!item.active) e.currentTarget.style.background = 'transparent' }}
-              >
-                <span style={{ display: 'flex', flexShrink: 0 }}>{item.icon}</span>
-                <span>{item.label}</span>
-                {item.active && (
-                  <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} className="pulse-dot" />
-                )}
-              </button>
-            ))}
+            {section.items.map(item => {
+              const isActive = item.key === activePage
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => onNavigate?.(item.key)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', padding: '8px 10px', borderRadius: 8, border: 'none',
+                    background: isActive ? '#d3ebff' : 'transparent',
+                    color: isActive ? '#1d4ed8' : '#475569',
+                    fontSize: 13, fontWeight: isActive ? 700 : 500,
+                    fontFamily: 'Sora, sans-serif', cursor: 'pointer',
+                    textAlign: 'left', transition: 'all 0.13s',
+                    outline: isActive ? '1.5px solid #93c5fd' : 'none',
+                  }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8fafc' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <span style={{ display: 'flex', flexShrink: 0 }}>{item.icon}</span>
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <div style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} className="pulse-dot" />
+                  )}
+                </button>
+              )
+            })}
           </div>
         ))}
       </div>

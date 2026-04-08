@@ -1,6 +1,4 @@
-function isWithin24h(lastTime) {
-  return /^\d{1,2}:\d{2}$/.test(lastTime)
-}
+import { isWithin24h } from '../../data/mockData'
 
 export default function StatusBadge({ status, lastTime }) {
   if (status === 'closed') {
