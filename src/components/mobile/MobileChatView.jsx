@@ -226,7 +226,6 @@ const WALLPAPERS = [
 function ChatMoreMenu({ conv, onUpdate, onViewContact, chatBg, setChatBg }) {
   const [open, setOpen] = useState(false)
   const [showWallpaper, setShowWallpaper] = useState(false)
-  const [showTransfer, setShowTransfer] = useState(false)
   const ref = useRef(null)
 
   useEffect(() => {
@@ -242,11 +241,6 @@ function ChatMoreMenu({ conv, onUpdate, onViewContact, chatBg, setChatBg }) {
       label: 'Info do contato',
       icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
       action: () => { setOpen(false); onViewContact() },
-    },
-    {
-      label: 'Transferir conversa',
-      icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>,
-      action: () => { setOpen(false); setShowTransfer(true) },
     },
     {
       label: 'Papel de parede',
@@ -341,51 +335,6 @@ function ChatMoreMenu({ conv, onUpdate, onViewContact, chatBg, setChatBg }) {
         </div>
       )}
 
-      {/* Transfer bottom sheet */}
-      {showTransfer && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}
-          onClick={() => setShowTransfer(false)}
-        >
-          <div
-            style={{ background: '#fff', borderRadius: '20px 20px 0 0', padding: '20px 0 32px', width: '100%' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div style={{ width: 36, height: 4, borderRadius: 99, background: '#e2e8f0', margin: '0 auto 18px' }} />
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', padding: '0 20px', marginBottom: 8 }}>Transferir conversa</div>
-            <div style={{ fontSize: 12.5, color: '#94a3b8', padding: '0 20px', marginBottom: 16 }}>Selecione o agente de destino</div>
-            {AGENTS.filter(a => a.id !== conv?.assignedTo).map(agent => (
-              <button
-                key={agent.id}
-                onClick={() => { onUpdate(conv.id, { assignedTo: agent.id }); setShowTransfer(false) }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14,
-                  width: '100%', padding: '12px 20px',
-                  border: 'none', borderBottom: '1px solid #f8fafc',
-                  background: 'transparent', cursor: 'pointer', textAlign: 'left',
-                }}
-                onTouchStart={e => e.currentTarget.style.background = '#f8fafc'}
-                onTouchEnd={e => e.currentTarget.style.background = 'transparent'}
-              >
-                <Avatar initials={agent.avatar} color={agent.color} size={40} />
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: '#0f172a' }}>{agent.name}</div>
-                  <div style={{ fontSize: 12, color: '#94a3b8' }}>Transferir agora</div>
-                </div>
-                <span style={{ marginLeft: 'auto', fontSize: 18, color: '#cbd5e1' }}>→</span>
-              </button>
-            ))}
-            <div style={{ padding: '12px 20px 0' }}>
-              <button
-                onClick={() => setShowTransfer(false)}
-                style={{ width: '100%', padding: '12px', borderRadius: 12, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'Sora, sans-serif' }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
