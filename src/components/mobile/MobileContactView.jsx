@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Avatar from '../ui/Avatar'
 import { WaIcon } from '../ui/Icons'
 import { AGENTS, THERMO_LEVELS, getThermoLevel } from '../../data/mockData'
@@ -54,9 +54,26 @@ function Section({ title, children, open, onToggle }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function MobileContactView({ conv, onBack }) {
+export default function MobileContactView({ conv, onBack, onUpdate }) {
   const [sections, setSections] = useState({ info: true, deal: true, lead: true })
   const toggle = key => setSections(prev => ({ ...prev, [key]: !prev[key] }))
+  const [noteInput, setNoteInput] = useState('')
+  const noteRef = useRef(null)
+
+  const handleAddNote = () => {
+    if (!noteInput.trim() || !conv) return
+    const newMsg = {
+      id: 'm' + Date.now(),
+      type: 'note',
+      text: noteInput.trim(),
+      author: 'Você',
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      date: 'Hoje',
+    }
+    onUpdate(conv.id, { messages: [...conv.messages, newMsg] })
+    setNoteInput('')
+    noteRef.current?.blur()
+  }
 
   if (!conv) return null
 
@@ -246,6 +263,56 @@ export default function MobileContactView({ conv, onBack }) {
             noBorder
           />
         </Section>
+
+        {/* Notas internas */}
+        <div style={{ background: '#fff', borderRadius: 16, padding: '16px 18px', marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#a16207">
+              <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+            </svg>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#a16207' }}>Notas internas</span>
+          </div>
+
+          {conv.messages.filter(m => m.type === 'note').map(note => (
+            <div key={note.id} style={{
+              background: '#fefce8', border: '1px solid #fde047',
+              borderRadius: 10, padding: '10px 12px', marginBottom: 8,
+            }}>
+              <p style={{ margin: 0, fontSize: 13, color: '#1e293b', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{note.text}</p>
+              <span style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>{note.author} · {note.time}</span>
+            </div>
+          ))}
+
+          <textarea
+            ref={noteRef}
+            value={noteInput}
+            onChange={e => setNoteInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddNote() } }}
+            placeholder="Escreva uma nota para o time..."
+            rows={2}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              border: '1.5px solid #fde047', borderRadius: 10,
+              background: '#fefce8', padding: '10px 12px',
+              fontSize: 13, color: '#1e293b', fontFamily: 'Sora, sans-serif',
+              resize: 'none', outline: 'none', lineHeight: 1.5,
+            }}
+          />
+          <button
+            onClick={handleAddNote}
+            disabled={!noteInput.trim()}
+            style={{
+              marginTop: 8, width: '100%', padding: '8px 0',
+              borderRadius: 10, border: 'none', cursor: noteInput.trim() ? 'pointer' : 'default',
+              background: noteInput.trim() ? '#a16207' : '#e2e8f0',
+              color: noteInput.trim() ? '#fff' : '#94a3b8',
+              fontSize: 13, fontWeight: 700, fontFamily: 'Sora, sans-serif',
+              transition: 'all 0.15s',
+            }}
+          >
+            Salvar nota
+          </button>
+        </div>
 
       </div>
     </div>

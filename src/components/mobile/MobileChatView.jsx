@@ -392,7 +392,7 @@ function ChatMoreMenu({ conv, onUpdate, onViewContact, chatBg, setChatBg }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }) {
-  const [mode, setMode] = useState('reply')
+  const [mode] = useState('reply')
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [chatBg, setChatBg] = useState('#ECE5DD')
@@ -425,11 +425,10 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
     if (!input.trim()) return
     const msg = {
       id: 'm' + Date.now(),
-      type: mode === 'note' ? 'note' : 'sent',
+      type: 'sent',
       text: input.trim(),
       time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       date: 'Hoje',
-      ...(mode === 'note' ? { author: 'Você' } : {}),
     }
     onUpdate(conv.id, { messages: [...conv.messages, msg], lastMessage: input.trim().substring(0, 40), lastTime: msg.time, unread: 0 })
     setInput('')
@@ -441,7 +440,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
 
   const handleInputChange = val => {
     setInput(val)
-    if (mode === 'note' || !val.trim()) return
+    if (!val.trim()) return
     setIsTyping(true)
     clearTimeout(typingTimerRef.current)
     typingTimerRef.current = setTimeout(() => setIsTyping(false), 1800)
@@ -454,7 +453,6 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
     grouped.push(m)
   })
 
-  const isNote = mode === 'note'
   const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   const unreadCount = conv.unread || 0
 
@@ -535,7 +533,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
           const nextSender = next ? senderOf(next) : null
           const spacingBottom = !next || next._sep || nextSender !== thisSender ? 10 : 3
 
-          if (item.type === 'note')       return <NoteMessage     key={item.id} msg={item} />
+          if (item.type === 'note')       return null
           if (item.type === 'received')   return <ReceivedMessage  key={item.id} msg={item} conv={conv} spacingBottom={spacingBottom} />
           if (item.type === 'sent-audio') return <AudioMessage     key={item.id} msg={item} />
           return <SentMessage key={item.id} msg={item} spacingBottom={spacingBottom}
@@ -579,25 +577,6 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
           background: '#F0F2F5', flexShrink: 0,
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}>
-          {/* Mode toggle */}
-          <div style={{ display: 'flex', gap: 4, padding: '6px 14px 2px', alignItems: 'center' }}>
-            {[
-              { key: 'reply', label: '↩ Resposta' },
-              { key: 'note',  label: '🔒 Nota interna' },
-            ].map(m => (
-              <button key={m.key} onClick={() => setMode(m.key)} style={{
-                padding: '3px 11px', borderRadius: 6, border: 'none',
-                background: mode === m.key ? '#fff' : 'transparent',
-                color: mode === m.key ? (m.key === 'note' ? '#a16207' : '#4356a0') : '#94a3b8',
-                fontSize: 11.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Sora, sans-serif',
-                boxShadow: mode === m.key ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
-                transition: 'all 0.15s',
-              }}>
-                {m.label}
-              </button>
-            ))}
-          </div>
-
           {/* Input row */}
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, padding: '6px 8px 10px' }}>
             {/* Attach */}
@@ -610,18 +589,18 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
             {/* Text input */}
             {!recording ? (
               <div style={{
-                flex: 1, background: isNote ? '#fefce8' : '#fff',
+                flex: 1, background: '#fff',
                 borderRadius: 24, padding: '10px 14px',
                 display: 'flex', alignItems: 'flex-end', gap: 8,
                 boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                border: isNote ? '1.5px solid #fde047' : 'none',
+                border: 'none',
                 minHeight: 46,
               }}>
                 <textarea
                   value={input}
                   onChange={e => handleInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={isNote ? 'Nota interna...' : 'Mensagem'}
+                  placeholder="Mensagem"
                   rows={1}
                   style={{
                     flex: 1, border: 'none', outline: 'none',
