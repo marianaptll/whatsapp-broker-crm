@@ -664,14 +664,6 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
                   <line x1="9" y1="22" x2="15" y2="22"/>
                 </svg>
               </button>
-            ) : (
-              <button onClick={handleSend} style={{
-                width: 46, height: 46, borderRadius: '50%', border: 'none', flexShrink: 0,
-                background: input.trim() ? '#a16207' : '#e2e8f0',
-                color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              }}>
-                <SendIcon />
-              </button>
             )}
           </div>
         </div>
