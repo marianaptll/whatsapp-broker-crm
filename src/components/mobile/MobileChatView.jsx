@@ -641,7 +641,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
             {input.trim() || recording ? (
               <button onClick={recording ? stopRec : handleSend} style={{
                 width: 46, height: 46, borderRadius: '50%', border: 'none', flexShrink: 0,
-                background: recording ? '#ef4444' : (isNote ? '#a16207' : '#25D366'),
+                background: recording ? '#ef4444' : '#25D366',
                 color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
               }}>
@@ -650,7 +650,7 @@ export default function MobileChatView({ conv, onUpdate, onBack, onViewContact }
                   : <SendIcon />
                 }
               </button>
-            ) : !isNote ? (
+            ) : (
               <button onClick={startRec} style={{
                 width: 46, height: 46, borderRadius: '50%', border: 'none', flexShrink: 0,
                 background: denied ? '#fee2e2' : '#25D366',
